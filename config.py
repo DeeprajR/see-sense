@@ -45,6 +45,19 @@ MAX_LOOKS = 6                  # survey looks (turn / tilt / step aside) at most
 RECHECK_EVERY_STEPS = 2        # after this many steps, take a new picture and update the route
 OFFLINE_RETRY_S = 30           # after a network failure, wait this long before trying again
 
+# --- JEV (TypeSafe): quick checks on short text (optional) ----------------------------
+# A: is what the mic heard a request, a command, or misheard words?  B: which things Claude saw
+# need an extra alert (say / buzz / ignore)? Without the key, Wayfinder works without these.
+JEV_API_KEY = os.environ.get("TYPESAFE_API_KEY", "")
+JEV_TIMEOUT_S = 2.5
+JEV_MIN_CONFIDENCE = 0.6       # below this JEV's answer is ignored (speech goes to Claude)
+MAX_WARNINGS_PER_LOOK = 1      # spoken extra alerts after each route update (the rest buzz)
+
+# --- Live view (python main.py --stream): the camera in a browser ---------------------
+LIVE_VIEW_PORT = 8000          # open http://<PI_IP>:8000 on the same Wi-Fi
+LIVE_VIEW_FPS = 10             # pictures per second while someone is watching
+LIVE_VIEW_WIDTH = 640          # picture width (smaller = lighter on the Pi and the Wi-Fi)
+
 # --- Guiding a turn ("turn right about 60 degrees") -----------------------------------
 TURN_TOLERANCE_DEG = 10        # close enough
 TURN_TIMEOUT_S = 12            # stop waiting and look anyway

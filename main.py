@@ -1,12 +1,14 @@
 """SENSE Wayfinder: hold the button, say where you want to go, and get guided there.
 
     python main.py                          # on the Pi (Pi Camera, button, mic, motors, sensor)
+    python main.py --stream                 # ...and watch the camera at http://<PI_IP>:8000
     python main.py --source 0 --show        # laptop webcam, preview window, type requests
 
 Claude looks through the chest camera, asks you to turn until it can see the way, then gives
 the route a few steps at a time (press the button for the next step) and looks again to update
-it. The distance sensor buzzes, and says "Stop" when something is very close: that part needs
-no internet and no AI.
+it. JEV checks what the mic heard before it goes to Claude, and picks which things Claude saw
+need an extra alert. The distance sensor buzzes, and says "Stop" when something is very close:
+that part needs no internet and no AI.
 """
 
 import argparse
@@ -19,6 +21,7 @@ from camera import is_live, open_camera
 from controls import HELP, Controls
 from distance import DistanceSensor
 from haptics import Haptics
+from jev import Jev, warning
 from motion import YawEstimator
 from planner import MESSAGES, Planner, PlannerError
 from speech import Speaker, wait_quiet
@@ -33,6 +36,7 @@ STILL_LOOKING = "Still looking."
 NO_ROUTE = "There's no route yet. Hold the button and tell me where you want to go."
 ASK_HINT = "Hold the button to answer."
 NOT_HEARD = "I didn't hear anything. Hold the button while you speak."
+UNCLEAR = "Sorry, I didn't catch that. Hold the button and say it again."
 NOTHING_TO_REPEAT = "Nothing to repeat."
 STOPPED = "Stopped."
 OBSTACLE = "Stop. Something right in front of you."
@@ -42,7 +46,7 @@ CAMERA_LOST = "Camera disconnected."
 PRESS_WHEN_DONE = "Press the button when you're done."
 KEEP_TURNING = {"left": "Keep turning left.", "right": "Keep turning right."}
 FIXED_SENTENCES = [READY, LOOKING, LOOKING_AGAIN, STILL_LOOKING, NO_ROUTE, ASK_HINT, NOT_HEARD,
-                   PRESS_WHEN_DONE,
+                   UNCLEAR, PRESS_WHEN_DONE,
                    NOTHING_TO_REPEAT, STOPPED, OBSTACLE, MIC_MISSING, CAMERA_MISSING, CAMERA_LOST,
                    *KEEP_TURNING.values(), *MESSAGES]
 
@@ -80,7 +84,15 @@ class App:
         self.controls = Controls()
         self.yaw = YawEstimator()
         self.planner = Planner()
+        self.jev = Jev()
         self.frame = None
+        self.question = ""              # Claude's last question to the wearer (for JEV)
+        self.last_seen = ""             # Claude's note on the latest photo (live view)
+        self.live = None
+        if args.stream:
+            from liveview import LiveView
+
+            self.live = LiveView()
         self.last_said = ""
         self.gen = 0                    # bumped on every new request / stop: older work is dropped
         self.thinking = False
@@ -91,7 +103,8 @@ class App:
         print(f"[wayfinder] tts: {self.speaker.backend} | voice: "
               f"{'elevenlabs' if config.ELEVENLABS_API_KEY else 'local'} | haptics: {self.haptics.name} | "
               f"distance: {self.distance.model or 'none'} | claude: "
-              f"{config.CLAUDE_MODEL if self.planner.client else 'off (' + self.planner.reason + ')'}")
+              f"{config.CLAUDE_MODEL if self.planner.client else 'off (' + self.planner.reason + ')'}"
+              f" | jev: {'on' if config.JEV_API_KEY else 'off (' + self.jev.reason + ')'}")
 
     # --- output -------------------------------------------------------------------
 
@@ -124,6 +137,8 @@ class App:
             self.listener.stop_capture()
         elif kind == "text":
             self.on_text(action[1])
+        elif kind == "checked":                         # JEV's verdict on what was said
+            self.route(action[1], action[2])
         elif kind == "next":
             self.next_step()
         elif kind == "look":
@@ -139,15 +154,31 @@ class App:
         if not text:
             self.say(NOT_HEARD)
             return
-        command = parse_command(text)
-        if command == "stop":
+        command = parse_command(text)                  # the usual short commands: instant
+        if command:
+            self.route(text, command)
+        elif self.jev.available:                        # JEV: request, command or misheard? (~0.3 s)
+            question = self.question if self.waiting_answer else ""
+
+            def check():
+                label = self.jev.check_speech(text, question)
+                self.controls.actions.put(("checked", text, label))
+            threading.Thread(target=check, daemon=True).start()
+        else:
+            self.route(text, None)
+
+    def route(self, text: str, label: str | None):
+        """Act on what was said. label: a command, "unclear", or None/"request"/"answer"."""
+        if label == "stop":
             self.stop()
-        elif command == "next":
+        elif label == "next":
             self.next_step()
-        elif command == "repeat":
+        elif label == "repeat":
             self.say(self.last_said or NOTHING_TO_REPEAT)
-        elif command == "look":
+        elif label == "look":
             self.look_again()
+        elif label == "unclear":
+            self.say(UNCLEAR)                           # misheard: don't spend a Claude call on it
         elif self.waiting_answer:
             self.waiting_answer = False
             self.think(f'They answered: "{text}"')
@@ -219,6 +250,7 @@ class App:
                 if cancelled():
                     return
                 print(f"[plan] {turn.action}: {turn.say} {turn.steps or ''}")
+                self.last_seen = turn.seen
                 turning = turn.look_direction in ("left", "right")
                 if turn.action == "look":
                     self.say(turn.say, haptic="turn" if turning else None,
@@ -235,9 +267,13 @@ class App:
                     step = self.planner.next_step()       # first walking step, after the turn
                     if step and not cancelled():
                         self.say(step)
+                    told = " ".join(s for s in (turn.say, step) if s)
+                    threading.Thread(target=self.notice, args=(turn.objects, told, cancelled),
+                                     daemon=True).start()
                 elif turn.action == "ask_user":
                     self.say(turn.say)
                     self.say(ASK_HINT)
+                    self.question = turn.say
                     self.waiting_answer = True
                 else:
                     self.say(turn.say)
@@ -245,6 +281,20 @@ class App:
         finally:
             if not cancelled():         # a newer request owns the flag otherwise
                 self.thinking = False
+
+    def notice(self, objects: list[dict], told: str, cancelled):
+        """JEV picks which things Claude saw need an extra alert: say it, or buzz on its side."""
+        labels = self.jev.relevance(objects, told)
+        if cancelled():
+            return
+        warned = 0
+        for obj, label in zip(objects, labels):
+            side = obj["where"]
+            if label == "warn" and warned < config.MAX_WARNINGS_PER_LOOK:
+                warned += 1
+                self.say(warning(obj), haptic="notice", where=side)
+            elif label in ("warn", "buzz"):
+                self.haptics.play("notice", side)
 
     def guide_turn(self, direction: str, degrees: int, cancelled) -> str:
         """Wait while the wearer turns as asked (measured from the image); report what happened."""
@@ -332,6 +382,8 @@ class App:
                     lost = is_live(self.args.source)
                     break
                 self.step(frame[..., :3])
+                if self.live:
+                    self.live.update(frame[..., :3], lambda img: draw_overlay(img, self))
                 if self.args.show:
                     cv2.imshow("Wayfinder", draw_overlay(frame.copy(), self))
                     self.controls.key(cv2.waitKey(1))
@@ -357,29 +409,45 @@ class App:
 
 
 def draw_overlay(img, app: App):
+    """Status on the picture (preview window and live view): what Wayfinder is doing right now."""
+    import textwrap
+
     import cv2
 
     h, w = img.shape[:2]
+    s = max(w / 1280, 0.6)                          # scale text to the picture (readable when small)
     d = app.distance.read()
-    lines = [f"turned {app.yaw.yaw:+.0f} deg",
+    lines = [f"turned {round(app.yaw.yaw) + 0:+d} deg" + (f"   ahead {d:.2f} m" if d is not None else ""),
              "thinking..." if app.thinking else ("goal: " + app.planner.goal if app.planner.goal else "idle")]
     if app.planner.steps:
         lines.append(f"step {app.planner.step_index}/{len(app.planner.steps)}")
-    if d is not None:
-        lines.append(f"ahead {d:.2f} m")
-    for i, text in enumerate(lines):
-        cv2.putText(img, text, (10, 32 + 32 * i), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
+
+    def text(t, y, color, size=0.9):              # dark shadow first, so it reads on any background
+        x, th, o = int(12 * s), max(1, int(2 * s)), max(1, int(2 * s))
+        cv2.putText(img, t, (x + o, y + o), cv2.FONT_HERSHEY_SIMPLEX, size * s, (0, 0, 0), th)
+        cv2.putText(img, t, (x, y), cv2.FONT_HERSHEY_SIMPLEX, size * s, color, th)
+
+    for i, t in enumerate(lines):
+        text(t, int((36 + 36 * i) * s), (0, 255, 255))
+    # Bottom: the last thing said and what Claude saw, above the 4 motors.
+    bottom = [f"said: {app.last_said}" if app.last_said else "", f"seen: {app.last_seen}" if app.last_seen else ""]
+    per_line = max(30, int((w - 24 * s) / (13 * s)))     # characters that fit across
+    wrapped = [w_ for b in bottom if b for w_ in textwrap.wrap(b, per_line)][-4:]
+    for i, t in enumerate(wrapped):
+        text(t, h - int((70 + 30 * (len(wrapped) - i)) * s), (255, 255, 255), 0.65)
     for i, m in enumerate(config.MOTORS):           # the 4 motors along the bottom: filled = on
-        cx, cy = int(w * (i + 0.5) / len(config.MOTORS)), h - 24
+        cx, cy = int(w * (i + 0.5) / len(config.MOTORS)), h - int(30 * s)
         on = app.haptics.state[m] > 0
-        cv2.circle(img, (cx, cy), 15, (0, 0, 255) if on else (90, 90, 90), -1 if on else 2)
+        cv2.circle(img, (cx, cy), int(18 * s), (0, 0, 255) if on else (160, 160, 160), -1 if on else 2)
     return img
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source", default="picam", help="'picam', webcam index, video path or stream URL")
-    ap.add_argument("--show", action="store_true", help="preview window (laptop)")
+    ap.add_argument("--show", action="store_true", help="preview window (laptop, or a Pi with a screen)")
+    ap.add_argument("--stream", action="store_true",
+                    help=f"live view in a browser: http://<PI_IP>:{config.LIVE_VIEW_PORT}")
     ap.add_argument("--tts", default=config.TTS_BACKEND,
                     choices=["auto", "espeak", "windows", "print"])
     ap.add_argument("--haptics", default=config.HAPTICS_BACKEND, choices=["auto", "gpio", "sim", "off"])

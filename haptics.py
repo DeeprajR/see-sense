@@ -3,6 +3,7 @@
   turn      slow pulses on the left or right motor   -> keep turning that way
   obstacle  long buzz on both front motors           -> something close ahead (distance sensor)
   stop      fast pulses on both front motors         -> very close: stop
+  notice    one short pulse on one side              -> something worth knowing on that side
   ready / arrived / listening                        -> short confirmations on all motors
 
 On a Pi the motors are driven through transistors on GPIO PWM pins. Anywhere else a simulator
@@ -22,8 +23,9 @@ PATTERNS = {
     "arrived":   [(0.15, 0.10), (0.15, 0.10), (0.5, 0.0)],
     "ready":     [(0.10, 0.10)],
     "listening": [(0.06, 0.0)],
+    "notice":    [(0.15, 0.0)],
 }
-RANK = {"stop": 3, "obstacle": 2, "arrived": 2, "turn": 1, "ready": 0, "listening": 0}
+RANK = {"stop": 3, "obstacle": 2, "arrived": 2, "turn": 1, "notice": 1, "ready": 0, "listening": 0}
 WHERE = {
     "left": ["left"],
     "right": ["right"],

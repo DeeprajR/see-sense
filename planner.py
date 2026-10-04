@@ -65,6 +65,8 @@ can see clearly.
 - "answer": a question that needs no route, or the goal wasn't found after looking around: say so \
 and suggest asking someone nearby.
 "blocker" and "blocker_instruction" are "" unless a plan walks up to a movable blocker.
+"objects": up to 6 things in this photo that matter for walking (people, obstacles, steps, doors, \
+signs), each with its side, rough distance in metres, and whether it's moving toward them.
 
 How to speak: "say" is spoken aloud and is never empty: one or two short sentences, plain \
 English, no lists or markdown. Say when something is uncertain. Never say a path, road or crossing is safe. Mention \
@@ -84,9 +86,19 @@ SCHEMA = {
         "steps": {"type": "array", "items": {"type": "string"}},
         "blocker": {"type": "string"},
         "blocker_instruction": {"type": "string"},
+        "objects": {"type": "array", "items": {
+            "type": "object",
+            "properties": {
+                "what": {"type": "string"},
+                "where": {"type": "string", "enum": ["left", "ahead", "right"]},
+                "distance_m": {"type": "number"},
+                "moving_toward": {"type": "boolean"},
+            },
+            "required": ["what", "where", "distance_m", "moving_toward"],
+            "additionalProperties": False}},
     },
     "required": ["action", "look_direction", "look_degrees", "seen", "say", "steps", "blocker",
-                 "blocker_instruction"],
+                 "blocker_instruction", "objects"],
     "additionalProperties": False,
 }
 
@@ -134,6 +146,7 @@ class Turn:
     seen: str = ""
     blocker: str = ""
     blocker_instruction: str = ""
+    objects: list[dict] = field(default_factory=list)    # for JEV: which need an extra alert
 
 
 def encode_jpeg(frame) -> str:
@@ -307,7 +320,7 @@ class Planner:
 
         turn = Turn(d["action"], spoken(d["say"]), d["look_direction"], int(d["look_degrees"]),
                     [spoken(s) for s in d["steps"] if s.strip()], d["seen"].strip(),
-                    d["blocker"].strip(), spoken(d["blocker_instruction"]))
+                    d["blocker"].strip(), spoken(d["blocker_instruction"]), d.get("objects", [])[:6])
         if not turn.say:
             turn.say = default_say(turn)
         print(f"[claude] seen: {turn.seen}")

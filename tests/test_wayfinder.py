@@ -18,8 +18,9 @@ import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 import config  # noqa: E402
+from jev import warning  # noqa: E402
 from main import (ASK_HINT, LOOKING, LOOKING_AGAIN, NO_ROUTE, OBSTACLE, PRESS_WHEN_DONE,  # noqa: E402
-                  STOPPED, App, parse_command)
+                  STOPPED, UNCLEAR, App, parse_command)
 from planner import Planner, keep_latest_images  # noqa: E402
 from voice import clean, to_vosk  # noqa: E402
 
@@ -28,9 +29,25 @@ config.SETTLE_S = 0.0
 config.STEP_ASIDE_S = 0.0
 
 
-def reply(action, say, direction="none", degrees=0, steps=(), blocker="", instruction=""):
+def reply(action, say, direction="none", degrees=0, steps=(), blocker="", instruction="", objects=()):
     return {"action": action, "look_direction": direction, "look_degrees": degrees, "seen": "",
-            "say": say, "steps": list(steps), "blocker": blocker, "blocker_instruction": instruction}
+            "say": say, "steps": list(steps), "blocker": blocker, "blocker_instruction": instruction,
+            "objects": list(objects)}
+
+
+class FakeJev:
+    """Stands in for JEV: scripted verdicts. available=False = no key / offline."""
+
+    def __init__(self, speech=None, relevance=(), available=True):
+        self.speech, self._relevance, self.available = speech, list(relevance), available
+        self.heard: list[tuple[str, str]] = []
+
+    def check_speech(self, text, question=""):
+        self.heard.append((text, question))
+        return self.speech
+
+    def relevance(self, objects, told):
+        return self._relevance or ["ignore"] * len(objects)
 
 
 class Obj:
@@ -59,9 +76,10 @@ class FakeClaude:
         return self.calls[-1]["messages"][-1]["content"][1]["text"]
 
 
-def make_app(replies=(), **kw):
-    app = App(argparse.Namespace(source="none", show=False, tts="print", haptics="sim"))
+def make_app(replies=(), jev=None, **kw):
+    app = App(argparse.Namespace(source="none", show=False, stream=False, tts="print", haptics="sim"))
     app.planner.client = FakeClaude(replies, **kw)
+    app.jev = jev or FakeJev(available=False)              # never a real JEV call in tests
     app.frame = np.zeros((360, 640, 3), np.uint8)
     app.said = []
     original = app.say
@@ -74,11 +92,14 @@ def make_app(replies=(), **kw):
 
 
 def settle(app, timeout=3.0):
-    """Wait for the background planning thread to finish."""
+    """Wait for JEV's verdict (if any) and the background planning thread to finish."""
     end = time.monotonic() + timeout
     time.sleep(0.05)
+    for action in app.controls.poll():                     # JEV's verdict arrives on the queue
+        app.handle(action)
     while app.thinking and time.monotonic() < end:
         time.sleep(0.02)
+    time.sleep(0.05)
 
 
 class TestCommands(unittest.TestCase):
@@ -248,6 +269,60 @@ class TestBlocker(unittest.TestCase):
         settle(app)
         self.assertIn("They reached the chair", app.planner.client.last_text())
         self.assertEqual(app.said[-1], "Walk 3 steps.")
+
+
+class TestJevSpeech(unittest.TestCase):
+    def test_misheard_never_reaches_claude(self):
+        app = make_app(jev=FakeJev(speech="unclear"))
+        app.on_text("the mind to my home")
+        settle(app)
+        self.assertEqual(app.said, [UNCLEAR])
+        self.assertEqual(app.planner.client.calls, [])
+
+    def test_command_said_another_way(self):
+        app = make_app(jev=FakeJev(speech="stop"))
+        app.on_text("please forget about it")
+        settle(app)
+        self.assertEqual(app.said, [STOPPED])
+
+    def test_unsure_or_offline_goes_to_claude(self):
+        for jev in (FakeJev(speech=None), FakeJev(available=False)):
+            app = make_app([reply("plan", "The exit is ahead.", steps=["Walk 3 steps."])], jev=jev)
+            app.on_text("take me to the exit")
+            settle(app)
+            self.assertEqual(app.said[-1], "Walk 3 steps.")
+
+    def test_jev_knows_the_question_being_answered(self):
+        jev = FakeJev(speech="answer")
+        app = make_app([reply("ask_user", "Which door, front or side?"),
+                        reply("plan", "The front door is ahead.", steps=["Walk 4 steps."])], jev=jev)
+        app.jev = FakeJev(speech="request")
+        app.on_text("take me to the door")
+        settle(app)
+        app.jev = jev
+        app.on_text("the front one")
+        settle(app)
+        self.assertEqual(jev.heard[-1], ("the front one", "Which door, front or side?"))
+        self.assertIn('They answered: "the front one"', app.planner.client.last_text())
+
+
+class TestJevAlerts(unittest.TestCase):
+    def test_warn_is_spoken_buzz_is_felt(self):
+        person = {"what": "a person", "where": "left", "distance_m": 2.0, "moving_toward": True}
+        bag = {"what": "a bag", "where": "right", "distance_m": 1.0, "moving_toward": False}
+        poster = {"what": "a poster", "where": "ahead", "distance_m": 5.0, "moving_toward": False}
+        app = make_app([reply("plan", "The door is ahead.", steps=["Walk 3 steps."],
+                              objects=[person, bag, poster])],
+                       jev=FakeJev(speech="request", relevance=["warn", "buzz", "ignore"]))
+        app.on_text("take me to the door")
+        settle(app)
+        time.sleep(0.1)
+        self.assertEqual(app.said[-1], "A person on your left, coming toward you, about 3 steps away.")
+        self.assertNotIn("poster", " ".join(app.said))
+
+    def test_warning_sentence(self):
+        self.assertEqual(warning({"what": "wet floor sign", "where": "ahead", "distance_m": 0.5,
+                                  "moving_toward": False}), "Wet floor sign ahead, about 1 step away.")
 
 
 class TestDistanceGuard(unittest.TestCase):

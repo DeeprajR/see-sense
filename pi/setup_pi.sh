@@ -43,7 +43,7 @@ fi
 # shellcheck disable=SC1091
 source .venv/bin/activate
 pip install --upgrade pip
-pip install anthropic vosk sounddevice smbus2
+pip install anthropic typesafe-sdk vosk sounddevice smbus2
 
 step "Distance sensor driver (only the one for the chip that's connected)"
 chip="$(python -c "from distance import detect_tof; print(detect_tof() or 'none')" 2>/dev/null || echo none)"
@@ -59,7 +59,7 @@ python -c "from voice import ensure_model; print(ensure_model())" \
 
 step "Checks"
 ok=1
-python -c "import picamera2, cv2, anthropic, vosk, sounddevice; print('python packages OK')" || {
+python -c "import picamera2, cv2, anthropic, typesafe_sdk, vosk, sounddevice; print('python packages OK')" || {
     ok=0
     echo "!! Import failed. If the error mentions numpy, run:  source .venv/bin/activate && pip install 'numpy<2'"
 }
@@ -72,6 +72,9 @@ fi
 if [[ ! -f .env ]] || ! grep -q "ANTHROPIC_API_KEY=." .env; then
     ok=0
     echo "!! No Claude key: put ANTHROPIC_API_KEY=... in $APP_DIR/.env (route planning is off until then)."
+fi
+if [[ ! -f .env ]] || ! grep -q "TYPESAFE_API_KEY=." .env; then
+    echo "-- No JEV key (TYPESAFE_API_KEY in .env): optional; speech goes straight to Claude without it."
 fi
 if arecord -l 2>/dev/null | grep -qi "voicehat"; then
     echo "INMP441 microphone OK"

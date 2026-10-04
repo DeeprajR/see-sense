@@ -27,6 +27,12 @@ Hold button: "Take me to the exit"
                takes a new photo and updates the route.
                "The door is right in front of you. The handle is on the right."
 
+JEV (quick checks, ~0.3 s each):
+  before Claude  what the mic heard: a request, a command said another way ("what do I do
+                 now" = next), or misheard words -> "Sorry, I didn't catch that." at once
+  after a plan   the things Claude saw: warn (say it), buzz (a pulse on its side) or ignore,
+                 e.g. "A person on your left, coming toward you, about 3 steps away."
+
 Distance sensor (always on, no internet, no AI): buzz when something is under 1 m ahead,
 "Stop. Something right in front of you." under 0.5 m.
 ```
@@ -43,6 +49,8 @@ Distance sensor (always on, no internet, no AI): buzz when something is under 1 
 | Feel fast front pulses + "Stop" | Something within 0.5 m |
 | Feel three pulses | You've arrived |
 | "...Push it to your left... Press the button when you're done." | Move the chair, then press: it takes a new photo to check the way is clear |
+| Feel one short pulse on a side | Something worth knowing there (JEV decided it's minor) |
+| "Sorry, I didn't catch that." | The mic misheard you: hold the button and say it again |
 
 Each look takes about **3–5 seconds** while Claude thinks (measured: 4.5 s for a first answer,
 3.1 s for a re-check; a survey with one turn: 8 s plus the time you take to turn). The distance
@@ -135,9 +143,23 @@ bash pi/test_mic.sh          # records 4 s and plays it back
 python pi/test_tof.py        # live distance readings
 source .venv/bin/activate
 python pi/camera_check.py --ask "where is the door?"   # focus, brightness and Claude's answer
-python main.py               # run it
+python main.py               # run it  (add --stream for the live view, below)
 bash pi/install_autostart.sh # start at boot (turns off the full SENSE service if installed)
+                             # bash pi/install_autostart.sh --stream  = with the live view
 ```
+
+### Live view: see what the camera sees
+```bash
+python main.py --stream
+```
+Then open **http://<PI_IP>:8000** in a browser on a laptop or phone on the same Wi-Fi (find the
+IP with `hostname -I`). It shows the camera picture with:
+- **Top:** how far the wearer has turned, the distance ahead, the goal and the step.
+- **Bottom:** the last sentence spoken and what Claude saw.
+- **Along the bottom:** the 4 motors (filled = vibrating).
+
+It only uses the processor while the page is open. Anyone on the same network can open it, so
+use it on a private network.
 
 **To update** after changing code: run `python tools/make_pi_upload.py` and copy the folder again
 with the same `scp` command (or `git pull` on the Pi), then
@@ -151,7 +173,7 @@ python -m pip install -r requirements.txt
 copy .env.example .env                                        # add your keys
 python main.py --source 0 --show                              # webcam
 python main.py --source http://<PHONE_IP>:4747/video --show   # phone camera (DroidCam)
-python tests/test_wayfinder.py                                # 18 tests, no hardware or internet needed
+python tests/test_wayfinder.py                                # 25 tests, no hardware or internet needed
 ```
 Type a request in the terminal ("take me to the door"), or in the preview window press **v** to
 talk (v again to send), **n**/space = next step, **l** = look again, **r** = repeat, **s** = stop,
@@ -162,6 +184,7 @@ talk (v again to send), **n**/space = next step, **l** = look again, **r** = rep
 | Key | For |
 |---|---|
 | `ANTHROPIC_API_KEY` (+ `ANTHROPIC_WORKSPACE_ID` if the key isn't workspace-scoped) | Claude: seeing and planning (required) |
+| `TYPESAFE_API_KEY` | JEV: checks what the mic heard and picks which things need an alert (optional; without it, speech goes straight to Claude) |
 | `ELEVENLABS_API_KEY` | Natural voice (optional; the local voice is used without it) |
 
 ## Files
@@ -170,6 +193,8 @@ talk (v again to send), **n**/space = next step, **l** = look again, **r** = rep
 |---|---|
 | `main.py` | The app: button and voice, guiding loop, turn guidance, distance warning |
 | `planner.py` | Claude: look / ask / plan / arrived / answer, a few steps at a time |
+| `jev.py` | JEV: what did they say (request / command / misheard)? Which things need an alert? |
+| `liveview.py` | The live camera view in a browser (`--stream`) |
 | `motion.py` | How far you turned, measured from the camera picture |
 | `camera.py` | Pi Camera (autofocus, full width, short exposure), webcam, phone, video |
 | `distance.py` | VL53L0X / VL53L1X distance sensor (chip detected automatically) |
@@ -180,7 +205,7 @@ talk (v again to send), **n**/space = next step, **l** = look again, **r** = rep
 | `config.py` | Every setting and pin |
 | `pi/` | Setup, earbud pairing, mic / sensor / camera checks, autostart |
 | `tools/` | Build the Pi upload folder; record the fixed sentences |
-| `tests/` | 18 automated tests with a stand-in for Claude |
+| `tests/` | 25 automated tests with stand-ins for Claude and JEV |
 
 ## What gets installed on the Pi
 
@@ -195,7 +220,8 @@ Only what Wayfinder uses (`pi/setup_pi.sh`):
 | `python3-gpiozero`, `python3-lgpio` (apt) | Motors and button |
 | `i2c-tools` (apt); `smbus2` (pip) | Finding the distance sensor |
 | `vl53l1x` **or** `adafruit-circuitpython-vl53l0x` + `adafruit-blinka` (pip) | The distance sensor: only the driver for the chip that's connected |
-| `anthropic` (pip) | Claude (the ElevenLabs voice uses Python's own web client: no package) |
+| `anthropic` (pip) | Claude (the ElevenLabs voice and the live view use Python's own web tools: no package) |
+| `typesafe-sdk` (pip) | JEV |
 | `vosk` (pip) + its 40 MB English model | Offline speech recognition |
 
 ## Limits

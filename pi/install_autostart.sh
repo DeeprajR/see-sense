@@ -2,6 +2,7 @@
 # Start SENSE Wayfinder automatically at boot -- no screen, keyboard or SSH needed.
 #
 #   bash pi/install_autostart.sh            # enable
+#   bash pi/install_autostart.sh --stream   # enable, with the live camera view on port 8000
 #   bash pi/install_autostart.sh --remove   # disable
 #
 # Runs as a *user* service (not root) so it can use the user's PipeWire session, which routes
@@ -21,6 +22,9 @@ if [[ "${1:-}" == "--remove" ]]; then
     exit 0
 fi
 
+EXTRA=""
+[[ "${1:-}" == "--stream" ]] && EXTRA=" --stream"
+
 if systemctl --user is-enabled sense.service >/dev/null 2>&1; then
     systemctl --user disable --now sense.service
     echo "Turned off the full SENSE service (it would compete for the camera)."
@@ -37,7 +41,7 @@ Wants=pipewire.service wireplumber.service
 WorkingDirectory=$APP_DIR
 # Give Bluetooth a moment to reconnect the earbuds after boot.
 ExecStartPre=/bin/sleep 8
-ExecStart=$APP_DIR/.venv/bin/python main.py --source picam
+ExecStart=$APP_DIR/.venv/bin/python main.py --source picam$EXTRA
 Restart=on-failure
 RestartSec=5
 Environment=PYTHONUNBUFFERED=1
@@ -55,3 +59,4 @@ echo "Wayfinder will now start at every boot."
 echo "  Logs:     journalctl --user -u wayfinder -f"
 echo "  Stop:     systemctl --user stop wayfinder"
 echo "  Restart:  systemctl --user restart wayfinder"
+if [[ -n "$EXTRA" ]]; then echo "  Live view: http://$(hostname -I | cut -d' ' -f1):8000"; fi
