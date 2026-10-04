@@ -1,0 +1,92 @@
+python main.py
+[haptics] GPIO unavailable ('GPIO busy'); simulating
+[controls] button on GPIO 17: hold = speak, press = next step
+[wayfinder] tts: espeak | voice: elevenlabs | haptics: sim | distance: none | claude: claude-sonnet-5-5
+[0:06:16.773304078] [3701]  INFO Camera camera_manager.cpp:340 libcamera v0.7.2+rpt20260817
+[0:06:16.782633534] [3726]  INFO RPI pisp.cpp:725 libpisp version v1.7.0 07-08-2026 (09:22:13)
+[0:06:16.790375495] [3726]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /usr/share/libcamera/ipa/rpi/pisp/imx708.json
+[0:06:16.798023180] [3726]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@80000/imx708@1a' for pipeline handler rpi/pisp
+[0:06:16.798073206] [3726]  INFO RPI pisp.cpp:1186 Registered camera /base/axi/pcie@1000120000/rp1/i2c@80000/imx708@1a to CFE device /dev/media0 and ISP device /dev/media1 using PiSP variant BCM2712_D0
+[0:06:16.801446709] [3726]  WARN V4L2 v4l2_pixelformat.cpp:346 Unsupported V4L2 pixel format Nc30
+[0:06:16.801481869] [3726]  WARN V4L2 v4l2_pixelformat.cpp:346 Unsupported V4L2 pixel format Nc12
+[0:06:16.802218971] [3701]  INFO Camera camera.cpp:1216 configuring streams: (0) 1280x720-RGB888/Rec709/Rec709/None/Full (1) 1536x864-BGGR_PISP_COMP1/RAW
+[0:06:16.802390268] [3726]  INFO RPI pisp.cpp:1502 Sensor: /base/axi/pcie@1000120000/rp1/i2c@80000/imx708@1a - Selected sensor format: 1536x864-SBGGR10_1X10/RAW - Selected CFE format: 1536x864-PC1B/RAW
+[say] Wayfinder ready. Hold the button and tell me where you want to go.
+Keys in the preview window: v = talk (v again to send), n/space = next step, l = look again, r = repeat, s = stop, q = quit.  Or type a request here and press Enter.
+Expression 'paInvalidSampleRate' failed in 'src/hostapi/alsa/pa_linux_alsa.c', line: 2048
+Expression 'PaAlsaStreamComponent_InitialConfigure( &self->capture, inParams, self->primeBuffers, hwParamsCapture, &realSr )' failed in 'src/hostapi/alsa/pa_linux_alsa.c', line: 2718
+Expression 'PaAlsaStream_Configure( stream, inputParameters, outputParameters, sampleRate, framesPerBuffer, &inputLatency, &outputLatency, &hostBufferSizeMode )' failed in 'src/hostapi/alsa/pa_linux_alsa.c', line: 2842
+[voice] mic: snd_rpi_googlevoicehat_soundcar: Google voiceHAT SoundCard HiFi voicehat-hifi-0 (hw:2,0) @ 48000 Hz x1, gain 16
+[voice] recording... (release the button / press v again to send)
+[wayfinder] 26 fps, turned +10 deg, cpu 52 C
+[voice] heard: 'you want to go to bathroom'
+[say] Let me look.
+[claude] look in 5.9 s (2941 in / 174 out tokens)
+[claude] seen: Crowded classroom. Ahead: a person standing, seated people at desks and laptops, a screen and a red banner. A door or opening on the far right, about 8 steps away. No bathroom sign seen yet. Seated person close on the left, desks and chairs close by.
+[plan] look: I can't see a bathroom sign yet. I'll turn to look to the right, where there is a door. 
+[say] I can't see a bathroom sign yet. I'll turn to look to the right, where there is a door.
+[voice] ElevenLabs failed (No module named 'httpx'); local voice for 30 s
+[wayfinder] 30 fps, turned +23 deg, cpu 53 C
+[say] Keep turning right.
+[voice] recording... (release the button / press v again to send)
+[wayfinder] 26 fps, turned -34 deg, cpu 50 C
+[voice] heard: 'the mind to my home'
+[say] Let me look.
+[wayfinder] 30 fps, turned +74 deg, cpu 52 C
+[claude] ask_user in 17.5 s (2938 in / 150 out tokens)
+[claude] seen: Cluttered work table right ahead with cables, a camera, a cap and chargers. A person sits just beyond it. More people at tables in the room behind. No clear exit visible.
+[plan] ask_user: Sorry, I didn't understand where you want to go. Can you say the place again, for example the exit or a door? 
+[say] Sorry, I didn't understand where you want to go. Can you say the place again, for example the exit or a door?
+[say] Hold the button to answer.
+[voice] ElevenLabs failed (No module named 'httpx'); local voice for 30 s
+[wayfinder] 30 fps, turned +76 deg, cpu 52 C
+[wayfinder] 30 fps, turned +76 deg, cpu 52 C
+[voice] recording... (release the button / press v again to send)
+[voice] heard: "then you'll find the exit ray"
+[wayfinder] 30 fps, turned +69 deg, cpu 52 C
+[wayfinder] 30 fps, turned +104 deg, cpu 52 C
+[wayfinder] 30 fps, turned +106 deg, cpu 52 C
+[voice] recording... (release the button / press v again to send)
+[claude] look in 28.8 s (4329 in / 189 out tokens)
+[claude] seen: Facing about 115 degrees right of start. A glass-framed door or folding glass panel stands open to the right, with trees outside. A person sits close on the right, a woman sits ahead-left at a desk, and black chairs and a laptop are on the left. The way to the glass door is not clear yet.
+[plan] look: I can see a glass door on your right with trees beyond it, but a person is sitting close by. I'll look a bit further right. 
+[say] I can see a glass door on your right with trees beyond it, but a person is sitting close by. I'll look a bit further right.
+[voice] ElevenLabs failed (No module named 'httpx'); local voice for 30 s
+[voice] heard: 'can you find an exit'
+[say] Let me look.
+[wayfinder] 30 fps, turned +104 deg, cpu 52 C
+[claude] look in 9.7 s (2938 in / 138 out tokens)
+[claude] seen: Ahead: a glass door, open, leading to an outdoor balcony with a railing, about 4 to 5 steps away. Chairs are in front, close ahead and to the left, and a person is sitting at left. The way past the chairs is not clear yet.
+[plan] look:  
+[say] 
+[wayfinder] 30 fps, turned +103 deg, cpu 52 C
+[say] Keep turning right.
+[wayfinder] 30 fps, turned +86 deg, cpu 52 C
+[claude] look in 12.7 s (4314 in / 165 out tokens)
+[claude] seen: At +71 degrees right: two people very close, one right in front of the camera and another just behind, with shelves of bags and supplies behind them. No exit visible on this side, and the way is blocked by people. Earlier, at 0 degrees: an open glass door to a balcony about 4 to 5 steps ahead, with chairs in front of it.
+[plan] look:  
+[say] 
+[voice] ElevenLabs failed (No module named 'httpx'); local voice for 30 s
+[wayfinder] 30 fps, turned +136 deg, cpu 51 C
+[say] Keep turning left.
+[say] Keep turning left.
+[wayfinder] 30 fps, turned +162 deg, cpu 52 C
+^C^CException ignored in atexit callback <bound method Picamera2.close of <picamera2.picamera2.Picamera2 object at 0x7fff06a6e660>>:
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/picamera2/picamera2.py", line 739, in close
+    self._cm.cleanup(self.camera_idx)
+  File "/usr/lib/python3/dist-packages/picamera2/picamera2.py", line 114, in cleanup
+    self.thread.join()
+  File "/usr/lib/python3.13/threading.py", line 1094, in join
+    self._handle.join(timeout)
+KeyboardInterrupt: 
+Exception ignored in: <function Picamera2.__del__ at 0x7fff05895a80>
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/picamera2/picamera2.py", line 516, in __del__
+    self.close()
+  File "/usr/lib/python3/dist-packages/picamera2/picamera2.py", line 739, in close
+    self._cm.cleanup(self.camera_idx)
+  File "/usr/lib/python3/dist-packages/picamera2/picamera2.py", line 109, in cleanup
+    del self.cameras[index]
+KeyError: 0
+^C
