@@ -37,7 +37,11 @@ class PiCamera:
         return self.cam.capture_array()
 
     def close(self):
-        self.cam.stop()
+        try:
+            self.cam.stop()
+            self.cam.close()
+        except Exception:
+            pass
 
 
 class CvCamera:

@@ -152,7 +152,9 @@ class Listener:
             self._gain = config.MIC_GAIN or (config.I2S_MIC_GAIN if is_i2s else 1.0)
             last = None
             # I2S hardware often only allows its native rate and stereo, so try a few formats.
-            for rate, channels in ((VOSK_RATE, 1), (default_rate, 1), (default_rate, 2), (48000, 2)):
+            formats = ((default_rate, 1), (48000, 1), (default_rate, 2), (48000, 2)) if is_i2s else \
+                ((VOSK_RATE, 1), (default_rate, 1), (default_rate, 2))
+            for rate, channels in formats:
                 try:
                     self._channel = min(config.MIC_CHANNEL, channels - 1)
                     self._stream = sd.InputStream(device=device, samplerate=rate, channels=channels,

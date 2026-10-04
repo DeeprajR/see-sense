@@ -209,10 +209,20 @@ class TestSurvey(unittest.TestCase):
         self.assertIn("They took one step to the left.", app.planner.client.last_text())
         self.assertEqual(app.said[-1], "Walk 2 steps.")
 
+    def test_empty_sentence_is_filled_in(self):
+        app = make_app([reply("look", "", "right", 45),
+                        reply("plan", "", "left", 30, steps=["Walk 2 steps."])])
+        app.on_text("take me to the exit")
+        settle(app)
+        self.assertIn("Turn right about 45 degrees.", app.said)
+        self.assertIn("Turn left about 30 degrees.", app.said)
+        self.assertNotIn("", app.said)
+
     def test_prompt_rules(self):
         from planner import SYSTEM
         for rule in ("SURVEY", "nearest", "TRACE THE WALKWAY", "look from another angle",
-                     "blocker_instruction", "Never ask them to move a person", "not stairs"):
+                     "blocker_instruction", "Never ask them to move a person", "not stairs",
+                     "never say \"I'll turn\"", "never empty"):
             self.assertIn(rule, SYSTEM)
 
 

@@ -34,7 +34,8 @@ Work in this order:
 or "go out": the nearest door or exit). Only if the goal and a clear way to it are plainly visible \
 in the first photo may you plan straight away. Otherwise choose "look" to see more: turn left or \
 right, tilt the camera up or down, or take one step to the side to see past a corner, a pillar or \
-a table. Check both sides before giving up. In "seen", note briefly what this photo shows and \
+a table. Check both sides before giving up. Once you've found the nearest goal and can see the \
+first part of the way, plan: you'll get new photos as they walk. In "seen", note briefly what this photo shows and \
 where (left / ahead / right, rough distance): it is your memory, because older photos are dropped.
 2. PICK THE GOAL: the nearest one that can be reached. If there are several, say which you chose.
 3. TRACE THE WALKWAY from where they stand to the goal: how far is it clear? A view from beside a \
@@ -50,7 +51,8 @@ ask them to move a person or a wheelchair someone is sitting in: route around, o
 
 Actions:
 - "look": see more. look_direction is left / right / up / down / step_left / step_right; \
-look_degrees is the turn (15-120) for left / right, else 0.
+look_degrees is the turn (15-120) for left / right, else 0. "say" tells them exactly what to do, \
+e.g. "Turn right about 45 degrees." They turn, not you: never say "I'll turn".
 - "ask_user": the request is unclear. One short question.
 - "plan": the route. look_direction / look_degrees: the turn to make before walking (left or \
 right; "none" and 0 if they already face the right way). "say": the overview and that turn, e.g. \
@@ -64,8 +66,8 @@ can see clearly.
 and suggest asking someone nearby.
 "blocker" and "blocker_instruction" are "" unless a plan walks up to a movable blocker.
 
-How to speak: "say" is spoken aloud: one or two short sentences, plain English, no lists or \
-markdown. Say when something is uncertain. Never say a path, road or crossing is safe. Mention \
+How to speak: "say" is spoken aloud and is never empty: one or two short sentences, plain \
+English, no lists or markdown. Say when something is uncertain. Never say a path, road or crossing is safe. Mention \
 hazards plainly (a step, a drop, a wet floor, a glass door). Only call something stairs when you \
 can clearly see steps: windows, blinds, shelves, floor tiles and railings are not stairs. Don't \
 identify people; say what they're doing if it matters."""
@@ -101,6 +103,19 @@ DECLINED = "Sorry, I can't help with that one."
 MESSAGES = [OFFLINE, NOT_SET_UP, BUSY, FAILED, DECLINED]
 
 
+def default_say(turn) -> str:
+    """Something to say when Claude left "say" empty."""
+    d, deg = turn.look_direction, turn.look_degrees
+    if d in ("left", "right") and (turn.action == "look" or deg >= 10):
+        return f"Turn {d} about {deg} degrees." if deg else f"Turn to your {d}."
+    if d in ("up", "down"):
+        return f"Tilt the camera {d}."
+    if d in ("step_left", "step_right"):
+        return f"Take one step to your {d[5:]}."
+    return {"plan": "", "arrived": "You're there.", "look": "Let me look a little more."}.get(
+        turn.action, FAILED)
+
+
 def spoken(text: str) -> str:
     """Steps read better aloud with a capital letter and a full stop."""
     text = text.strip()
@@ -128,7 +143,7 @@ def encode_jpeg(frame) -> str:
     s = config.CLAUDE_MAX_IMAGE_SIDE / max(h, w)
     if s < 1:
         frame = cv2.resize(frame, None, fx=s, fy=s, interpolation=cv2.INTER_AREA)
-    ok, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+    ok, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
     return base64.standard_b64encode(buf.tobytes()).decode("ascii")
 
 
@@ -293,6 +308,8 @@ class Planner:
         turn = Turn(d["action"], spoken(d["say"]), d["look_direction"], int(d["look_degrees"]),
                     [spoken(s) for s in d["steps"] if s.strip()], d["seen"].strip(),
                     d["blocker"].strip(), spoken(d["blocker_instruction"]))
+        if not turn.say:
+            turn.say = default_say(turn)
         print(f"[claude] seen: {turn.seen}")
         if turn.action == "look" and (self.looks >= config.MAX_LOOKS or turn.look_direction == "none"):
             turn.action = "answer"          # out of looks: speak what it has

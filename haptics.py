@@ -56,11 +56,19 @@ class GpioMotors:
     def __init__(self):
         from gpiozero import PWMOutputDevice
 
-        self.devs = {m: PWMOutputDevice(config.MOTOR_PINS[m], frequency=1000) for m in config.MOTORS}
+        self.devs = {}
+        for m in config.MOTORS:                 # one unusable pin mustn't turn off the others
+            try:
+                self.devs[m] = PWMOutputDevice(config.MOTOR_PINS[m], frequency=1000)
+            except Exception as exc:
+                print(f"[haptics] {m} motor on GPIO{config.MOTOR_PINS[m]} unavailable: {exc}")
+        if not self.devs:
+            raise RuntimeError("no motor pin available")
         self.state = {m: 0.0 for m in config.MOTORS}
 
     def set(self, motor: str, value: float):
-        self.devs[motor].value = value
+        if motor in self.devs:
+            self.devs[motor].value = value
         self.state[motor] = value
 
 

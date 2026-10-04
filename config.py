@@ -37,8 +37,9 @@ ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 ANTHROPIC_WORKSPACE_ID = os.environ.get("ANTHROPIC_WORKSPACE_ID", "")  # needed if the key isn't workspace-scoped
 CLAUDE_MODEL = "claude-sonnet-5-5"   # later: "claude-opus-5-5" (more accurate, slower, costlier)
 CLAUDE_EFFORT = "medium"
-CLAUDE_TIMEOUT_S = 25
-CLAUDE_MAX_IMAGE_SIDE = 1280   # larger pictures are scaled down
+CLAUDE_TIMEOUT_S = 15         # per try (one retry)
+CLAUDE_MAX_IMAGE_SIDE = 1024   # larger pictures are scaled down: smaller uploads, quicker answers
+STILL_LOOKING_AFTER_S = 8      # say "Still looking." if Claude takes longer than this
 CLAUDE_KEEP_IMAGES = 3         # only the latest pictures are re-sent (a survey: left, ahead, right)
 MAX_LOOKS = 6                  # survey looks (turn / tilt / step aside) at most this many per request
 RECHECK_EVERY_STEPS = 2        # after this many steps, take a new picture and update the route
@@ -63,8 +64,9 @@ BLOCKER_QUIET_S = 30           # ...then don't also say "Stop" about it while th
 
 # --- Vibration: 4 motors, left to right across the body ---------------------------
 MOTORS = ["left", "front_left", "front_right", "right"]
-# BCM pins. Not 18/19/20: those are the INMP441 microphone's I2S pins.
-MOTOR_PINS = {"left": 12, "front_left": 13, "front_right": 16, "right": 26}
+# BCM pins. Not 18/19/20 (the microphone's I2S pins) and not 16: the microphone driver
+# (googlevoicehat) reserves GPIO16 for itself.
+MOTOR_PINS = {"left": 12, "front_left": 13, "front_right": 6, "right": 26}
 HAPTICS_BACKEND = "auto"       # auto (gpio on a Pi, else sim) | gpio | sim | off
 HAPTIC_INTENSITY = 1.0         # 0-1 PWM duty
 

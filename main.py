@@ -96,6 +96,8 @@ class App:
     # --- output -------------------------------------------------------------------
 
     def say(self, text: str, urgent: bool = False, haptic: str | None = None, where: str = "all"):
+        if not text:
+            return
         print(f"[say] {text}")
         self.speaker.say(text, urgent=urgent)
         if haptic:
@@ -202,12 +204,18 @@ class App:
             while not cancelled():
                 if self.frame is None:
                     return
+                # Claude can take a while: say so, so the wearer doesn't think it stopped.
+                waiting = threading.Timer(config.STILL_LOOKING_AFTER_S,
+                                          lambda: None if cancelled() else self.say(STILL_LOOKING))
+                waiting.start()
                 try:
                     turn = self.planner.think(self.frame.copy(), self.yaw.yaw, self.distance.read(), note)
                 except PlannerError as exc:
                     if not cancelled():
                         self.say(str(exc))
                     return
+                finally:
+                    waiting.cancel()
                 if cancelled():
                     return
                 print(f"[plan] {turn.action}: {turn.say} {turn.steps or ''}")

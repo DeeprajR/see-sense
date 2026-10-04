@@ -57,7 +57,7 @@ warning never waits for it.
 | INMP441 microphone | Hears your request | VDD→3.3V (pin 1), GND (pin 6), **L/R→GND**, SCK→GPIO18 (pin 12), WS→GPIO19 (pin 35), SD→GPIO20 (pin 38) |
 | VL53L0X / VL53L1X distance sensor, next to the camera | "Something close ahead" | VIN→3.3V, GND, SDA→GPIO2 (pin 3), SCL→GPIO3 (pin 5) |
 | Push button | Hold = speak, press = next step | GPIO17 (pin 11) ↔ GND |
-| 4 vibration motors (left, front-left, front-right, right) | Turn left/right, obstacle ahead, arrived | GPIO12, 13, 16, 26, each through an NPN transistor (2N2222/S8050) + 1 kΩ base resistor + 1N4007 diode across the motor; motor power from the 3.7 V LiPo (TP4056), **grounds shared with the Pi** |
+| 4 vibration motors (left, front-left, front-right, right) | Turn left/right, obstacle ahead, arrived | GPIO12, 13, 6, 26, each through an NPN transistor (2N2222/S8050) + 1 kΩ base resistor + 1N4007 diode across the motor; motor power from the 3.7 V LiPo (TP4056), **grounds shared with the Pi** |
 | Bluetooth earbuds | Speech | Paired with `pi/pair_earbuds.sh` |
 | Power bank, USB-C PD 5 V 3 A | Powers the Pi | USB-C |
 
@@ -80,15 +80,15 @@ Don't connect motors straight to GPIO pins: they draw 50–90 mA and a pin gives
                   GND (25) (26) GPIO7
                 GPIO0 (27) (28) GPIO1
                 GPIO5 (29) (30) GND ── motor switches' common ground
-                GPIO6 (31) (32) GPIO12 ── motor LEFT
+motor FRONT-RIGHT ── GPIO6 (31) (32) GPIO12 ── motor LEFT
  motor FRONT-LEFT ── GPIO13 (33) (34) GND
-    mic WS ── GPIO19 (35) (36) GPIO16 ── motor FRONT-RIGHT
+    mic WS ── GPIO19 (35) (36) GPIO16      (reserved by the mic driver: don't use)
  motor RIGHT ── GPIO26 (37) (38) GPIO20 ── mic SD (data)
                   GND (39) (40) GPIO21
    (mic VDD → pin 1, 3V3; mic L/R → GND)
 ```
 
-### One motor switch (build four: on GPIO12, 13, 16 and 26)
+### One motor switch (build four: on GPIO12, 13, 6 and 26)
 ```
    LiPo + (TP4056 OUT+) ──────────────────┬──────────────┐
                                           │              │
@@ -195,7 +195,7 @@ Only what Wayfinder uses (`pi/setup_pi.sh`):
 | `python3-gpiozero`, `python3-lgpio` (apt) | Motors and button |
 | `i2c-tools` (apt); `smbus2` (pip) | Finding the distance sensor |
 | `vl53l1x` **or** `adafruit-circuitpython-vl53l0x` + `adafruit-blinka` (pip) | The distance sensor: only the driver for the chip that's connected |
-| `anthropic` (pip) | Claude (also brings `httpx`, which the ElevenLabs voice uses) |
+| `anthropic` (pip) | Claude (the ElevenLabs voice uses Python's own web client: no package) |
 | `vosk` (pip) + its 40 MB English model | Offline speech recognition |
 
 ## Limits

@@ -9,6 +9,7 @@ Run tools/prewarm_voices.py once so the standard sentences are cached before goi
 """
 
 import hashlib
+import json
 import os
 import threading
 import time
@@ -52,20 +53,25 @@ class CloudVoices:
         if not self.provider or not self.online:
             return None
         try:
-            import httpx
+            import urllib.error
+            import urllib.request
 
-            r = httpx.post(
-                f"https://api.elevenlabs.io/v1/text-to-speech/{config.ELEVENLABS_VOICE_ID}",
-                params={"output_format": "wav_22050"},
-                headers={"xi-api-key": config.ELEVENLABS_API_KEY},
-                json={"text": text, "model_id": config.ELEVENLABS_MODEL},
-                timeout=config.CLOUD_VOICE_TIMEOUT_S)
-            if r.status_code == 402:
-                # e.g. "Free users cannot use library voices via the API": a plan issue, not a
-                # network one. Say so plainly and use the local voice.
-                raise RuntimeError(r.json().get("detail", {}).get("message", "payment required"))
-            r.raise_for_status()
-            audio = r.content
+            req = urllib.request.Request(
+                f"https://api.elevenlabs.io/v1/text-to-speech/{config.ELEVENLABS_VOICE_ID}"
+                "?output_format=wav_22050",
+                data=json.dumps({"text": text, "model_id": config.ELEVENLABS_MODEL}).encode(),
+                headers={"xi-api-key": config.ELEVENLABS_API_KEY, "Content-Type": "application/json"},
+                method="POST")
+            try:
+                with urllib.request.urlopen(req, timeout=config.CLOUD_VOICE_TIMEOUT_S) as r:
+                    audio = r.read()
+            except urllib.error.HTTPError as exc:
+                if exc.code == 402:
+                    # e.g. "Free users cannot use library voices via the API": a plan issue, not
+                    # a network one. Say so plainly and use the local voice.
+                    detail = json.loads(exc.read() or b"{}").get("detail", {})
+                    raise RuntimeError(detail.get("message", "payment required")) from None
+                raise
         except Exception as exc:
             self._went_offline(exc)
             return None
