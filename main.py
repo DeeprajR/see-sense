@@ -45,10 +45,11 @@ CAMERA_MISSING = "Camera not found."
 CAMERA_LOST = "Camera disconnected."
 PRESS_WHEN_DONE = "Press the button when you're done."
 KEEP_TURNING = {"left": "Keep turning left.", "right": "Keep turning right."}
+TURN_DONE = "OK, stop."
 FIXED_SENTENCES = [READY, LOOKING, LOOKING_AGAIN, STILL_LOOKING, NO_ROUTE, ASK_HINT, NOT_HEARD,
                    UNCLEAR, PRESS_WHEN_DONE,
                    NOTHING_TO_REPEAT, STOPPED, OBSTACLE, MIC_MISSING, CAMERA_MISSING, CAMERA_LOST,
-                   *KEEP_TURNING.values(), *MESSAGES]
+                   *KEEP_TURNING.values(), TURN_DONE, *MESSAGES]
 
 # Short spoken commands (anything else is a new request, or the answer to Claude's question).
 COMMANDS = {
@@ -311,6 +312,7 @@ class App:
         sign = -1 if direction == "left" else 1
         while time.monotonic() - t0 < config.TURN_TIMEOUT_S and not cancelled():
             if sign * (self.yaw.yaw - start) >= target - config.TURN_TOLERANCE_DEG:
+                self.say(TURN_DONE, urgent=True)        # far enough: stop turning
                 break
             now = time.monotonic()
             if now - last_pulse >= config.TURN_PULSE_EVERY_S:

@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 import config  # noqa: E402
 from jev import warning  # noqa: E402
 from main import (ASK_HINT, LOOKING, LOOKING_AGAIN, NO_ROUTE, OBSTACLE, PRESS_WHEN_DONE,  # noqa: E402
-                  STOPPED, UNCLEAR, App, parse_command)
+                  STOPPED, TURN_DONE, UNCLEAR, App, parse_command)
 from planner import Planner, keep_latest_images  # noqa: E402
 from voice import clean, to_vosk  # noqa: E402
 
@@ -221,6 +221,27 @@ class TestSurvey(unittest.TestCase):
         self.assertEqual(app.said[-2:], ["The nearest door is on your right. Turn right about 90 degrees.",
                                          "Walk about 4 steps."])     # step comes after the guided turn
         self.assertEqual(len(app.planner.client.calls), 1)
+
+    def test_says_stop_when_turned_far_enough(self):
+        app = make_app([reply("look", "Turn right about 60 degrees.", "right", 60),
+                        reply("plan", "The door is ahead.", steps=["Walk 2 steps."])])
+        config.TURN_TIMEOUT_S = 3
+        try:
+            app.on_text("take me to the exit")
+            time.sleep(0.2)
+            app.yaw.yaw += 55                                  # the wearer turns
+            settle(app, 5)
+        finally:
+            config.TURN_TIMEOUT_S = 0.3
+        self.assertIn(TURN_DONE, app.said)
+        self.assertIn("They turned 55 degrees to the right.", app.planner.client.last_text())
+
+    def test_no_stop_cue_when_not_turned(self):
+        app = make_app([reply("look", "Turn right about 60 degrees.", "right", 60),
+                        reply("plan", "The door is ahead.", steps=["Walk 2 steps."])])
+        app.on_text("take me to the exit")
+        settle(app)
+        self.assertNotIn(TURN_DONE, app.said)
 
     def test_step_aside_to_see_past_a_corner(self):
         app = make_app([reply("look", "Take one step to your left to see past the corner.", "step_left"),
