@@ -1,0 +1,18 @@
+# Secrets: API keys
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Built for the Pi by tools/make_pi_upload.py (contains .env)
+dist/
+
+# Downloaded on the Pi by pi/setup_pi.sh (Vosk speech model, ~70 MB unpacked)
+models/
+
+# Made on the Pi by setup / checks
+piper/
+camera_check.jpg

@@ -1,0 +1,7 @@
+# Laptop (to try it). On the Pi, pi/setup_pi.sh installs everything (picamera2, OpenCV, gpiozero via apt).
+opencv-python        # camera, turn measurement, pictures for Claude
+numpy
+anthropic            # Claude: sees the camera picture and plans the route (also brings httpx,
+                     # used for the ElevenLabs voice)
+vosk                 # offline speech recognition (push-to-talk)
+sounddevice          # microphone and playing recorded sentences

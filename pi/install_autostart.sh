@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Start SENSE Wayfinder automatically at boot -- no screen, keyboard or SSH needed.
+#
+#   bash pi/install_autostart.sh            # enable
+#   bash pi/install_autostart.sh --remove   # disable
+#
+# Runs as a *user* service (not root) so it can use the user's PipeWire session, which routes
+# audio to the Bluetooth earbuds. Turns off the full SENSE service if it was installed: only one
+# program can use the camera at a time.
+set -euo pipefail
+
+APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+UNIT_DIR="$HOME/.config/systemd/user"
+UNIT="$UNIT_DIR/wayfinder.service"
+
+if [[ "${1:-}" == "--remove" ]]; then
+    systemctl --user disable --now wayfinder.service 2>/dev/null || true
+    rm -f "$UNIT"
+    systemctl --user daemon-reload
+    echo "Wayfinder autostart removed."
+    exit 0
+fi
+
+if systemctl --user is-enabled sense.service >/dev/null 2>&1; then
+    systemctl --user disable --now sense.service
+    echo "Turned off the full SENSE service (it would compete for the camera)."
+fi
+
+mkdir -p "$UNIT_DIR"
+cat > "$UNIT" <<EOF
+[Unit]
+Description=SENSE Wayfinder - guided to where you want to go
+After=pipewire.service wireplumber.service network-online.target
+Wants=pipewire.service wireplumber.service
+
+[Service]
+WorkingDirectory=$APP_DIR
+# Give Bluetooth a moment to reconnect the earbuds after boot.
+ExecStartPre=/bin/sleep 8
+ExecStart=$APP_DIR/.venv/bin/python main.py --source picam
+Restart=on-failure
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target
+EOF
+
+# Lingering lets user services (and PipeWire) start at boot without anyone logging in.
+sudo loginctl enable-linger "$USER"
+systemctl --user daemon-reload
+systemctl --user enable --now wayfinder.service
+
+echo "Wayfinder will now start at every boot."
+echo "  Logs:     journalctl --user -u wayfinder -f"
+echo "  Stop:     systemctl --user stop wayfinder"
+echo "  Restart:  systemctl --user restart wayfinder"
