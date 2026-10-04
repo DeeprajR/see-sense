@@ -17,7 +17,8 @@ APP = os.path.normpath(os.path.join(HERE, ".."))
 OUT = os.path.join(APP, "dist", "seesense")
 
 MODULES = ["main.py", "config.py", "camera.py", "controls.py", "distance.py", "haptics.py",
-           "jev.py", "liveview.py", "motion.py", "planner.py", "speech.py", "voice.py", "voices.py"]
+           "jev.py", "liveview.py", "motion.py", "net.py", "planner.py", "speech.py", "voice.py",
+           "voices.py"]
 FOLDERS = ["pi", "voices/cache"]
 OPTIONAL = ["models/vosk-model-small-en-us-0.15"]    # setup_pi.sh downloads it if missing
 SKIP = ("__pycache__", ".pyc", "camera_check.jpg")

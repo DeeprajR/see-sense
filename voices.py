@@ -21,6 +21,7 @@ class CloudVoices:
     def __init__(self):
         self._offline_until = 0.0
         self._warming: set[str] = set()
+        self.blocked = ""              # quota used up / key not allowed: stop asking until restart
 
     @property
     def provider(self) -> str | None:
@@ -50,7 +51,7 @@ class CloudVoices:
 
     def synthesize(self, text: str) -> bytes | None:
         """ElevenLabs speech as WAV bytes (and cache it), or None."""
-        if not self.provider or not self.online:
+        if not self.provider or not self.online or self.blocked:
             return None
         try:
             import urllib.error
@@ -66,11 +67,18 @@ class CloudVoices:
                 with urllib.request.urlopen(req, timeout=config.CLOUD_VOICE_TIMEOUT_S) as r:
                     audio = r.read()
             except urllib.error.HTTPError as exc:
-                if exc.code == 402:
-                    # e.g. "Free users cannot use library voices via the API": a plan issue, not
-                    # a network one. Say so plainly and use the local voice.
-                    detail = json.loads(exc.read() or b"{}").get("detail", {})
-                    raise RuntimeError(detail.get("message", "payment required")) from None
+                detail = {}
+                try:
+                    detail = json.loads(exc.read() or b"{}").get("detail", {}) or {}
+                except ValueError:
+                    pass
+                status = detail.get("status", "") if isinstance(detail, dict) else ""
+                if exc.code == 402 or status in ("quota_exceeded", "missing_permissions"):
+                    # A plan or key issue (quota used up, voice or permission not allowed), not a
+                    # network one: say so once and use the local voice until restart.
+                    self.blocked = detail.get("message", f"HTTP {exc.code}") if isinstance(detail, dict) else str(exc)
+                    print(f"[voice] ElevenLabs unavailable: {self.blocked} Using the local voice.")
+                    return None
                 raise
         except Exception as exc:
             self._went_offline(exc)
@@ -87,8 +95,8 @@ class CloudVoices:
         Urgent sentences never wait for the network: only cached audio is used, and anything
         missing is fetched in the background so it's ready next time."""
         audio = self.cached(text)
-        if audio or not self.provider:
-            return audio
+        if audio or not self.provider or self.blocked or not config.CLOUD_VOICE_NEW_SENTENCES:
+            return audio                     # a new sentence: the local voice (saves credits)
         if urgent or not self.online:
             self._warm(text)
             return None

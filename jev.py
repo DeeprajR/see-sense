@@ -1,8 +1,9 @@
 """JEV (TypeSafe): quick (~0.3 s), confidence-scored choices on short text. Two jobs:
 
-  A. check_speech(): before anything goes to Claude, is what speech recognition heard a real
-     request, a command said another way ("what do I do now" = next), or misheard words?
-     "the mind to my home" -> "Sorry, I didn't catch that." at once, not after a slow Claude call.
+  A. check_speech(): before anything goes to Claude, is what speech recognition heard a command
+     said another way ("what do I do now" = next), or plain noise ("uh the the")? Only a confident
+     verdict is used; everything else (requests, questions, unusual wording) goes to Claude, which
+     understands it in context or asks back.
   B. relevance(): after Claude has planned a route, which of the things it saw need an extra
      alert: say it, buzz on its side, or ignore it. Runs in the background; never delays the route.
 
@@ -16,8 +17,8 @@ import time
 import config
 
 SPEECH = {
-    "request": "asks to be guided or taken somewhere, or to find something: a door, the exit, a "
-               "seat, a counter, a room, a toilet, a lift",
+    "request": "anything else they want: to be taken somewhere, to find something, or a question "
+               "about their surroundings",
     "answer": "answers the question the guide just asked",
     "next": "asks for the next step, or what to do now",
     "stop": "asks to stop or cancel the guidance",
@@ -77,7 +78,8 @@ class Jev:
     # --- A: what did they say? --------------------------------------------------------
 
     def check_speech(self, text: str, question: str = "") -> str | None:
-        """One of SPEECH's labels, or None (unsure / unavailable: treat it as before)."""
+        """"next" / "stop" / "repeat" / "look" / "unclear" when JEV is sure; otherwise None
+        (send it to Claude)."""
         if not self.available:
             return None
         labels = dict(SPEECH) if question else {k: v for k, v in SPEECH.items() if k != "answer"}
@@ -89,7 +91,11 @@ class Jev:
         if result is None:
             return None
         label, confidence = result["said"]
-        return label if confidence >= config.JEV_MIN_CONFIDENCE else None
+        if label == "unclear":
+            return label if confidence >= config.JEV_UNCLEAR_CONFIDENCE else None
+        if label in ("next", "stop", "repeat", "look"):
+            return label if confidence >= config.JEV_COMMAND_CONFIDENCE else None
+        return None                                # a request, question or answer: Claude
 
     # --- B: which things that Claude saw need an alert? ---------------------------------
 

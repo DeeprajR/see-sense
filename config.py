@@ -50,8 +50,17 @@ OFFLINE_RETRY_S = 30           # after a network failure, wait this long before 
 # need an extra alert (say / buzz / ignore)? Without the key, SEE SENSE works without these.
 JEV_API_KEY = os.environ.get("TYPESAFE_API_KEY", "")
 JEV_TIMEOUT_S = 2.5
-JEV_MIN_CONFIDENCE = 0.6       # below this JEV's answer is ignored (speech goes to Claude)
+JEV_MIN_CONFIDENCE = 0.6       # alerts: below this JEV's answer is ignored
+JEV_COMMAND_CONFIDENCE = 0.7   # "what do I do now" = next: only when this sure
+JEV_UNCLEAR_CONFIDENCE = 0.9   # "misheard": only when this sure; otherwise Claude works it out
 MAX_WARNINGS_PER_LOOK = 1      # spoken extra alerts after each route update (the rest buzz)
+
+# --- Internet: say when it's lost or back, and try to reconnect the Wi-Fi ----------------
+NET_CHECK_HOST = "api.anthropic.com"   # a connection is opened (no API call, no cost)
+NET_CHECK_EVERY_S = 5
+NET_FAILS_TO_DROP = 2          # checks in a row that must fail before saying "lost"
+RECONNECT_EVERY_S = 30         # while offline, ask the Pi to reconnect the Wi-Fi this often
+WIFI_INTERFACE = "wlan0"
 
 # --- Live view (python main.py --stream): the camera in a browser ---------------------
 LIVE_VIEW_PORT = 8000          # open http://<PI_IP>:8000 on the same Wi-Fi
@@ -88,6 +97,14 @@ BUTTON_PIN = 17                # hold = speak (release to send); short press = n
 PTT_HOLD_S = 0.4               # held this long = speaking (shorter = a press)
 PTT_MAX_S = 12                 # stop recording after this long even if still held
 
+# --- Speech recognition ---------------------------------------------------------------
+# auto: ElevenLabs speech-to-text when online (much more accurate), Vosk offline otherwise.
+STT_BACKEND = "auto"           # auto | elevenlabs | vosk
+STT_TIMEOUT_S = 6
+VOSK_ALTERNATIVES = 3          # offline: Claude gets the top guesses, not just one
+CONTEXT_KEEP_S = 300           # follow-ups within 5 min continue the same conversation
+MAX_HISTORY_MESSAGES = 30      # conversation sent to Claude (older turns dropped)
+
 # --- Microphone (INMP441) + offline speech recognition (Vosk) -----------------------
 # INMP441 -> Pi 5: VDD 3.3V (pin 1), GND (pin 6), L/R to GND (= left channel),
 #                  SCK GPIO18 (pin 12), WS GPIO19 (pin 35), SD GPIO20 (pin 38)
@@ -105,4 +122,8 @@ ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY", "")
 ELEVENLABS_VOICE_ID = os.environ.get("ELEVENLABS_VOICE_ID", "") or "JBFqnCBsd6RMkjVDRZzb"
 ELEVENLABS_MODEL = "eleven_flash_v2_5"
 VOICE_CACHE_DIR = _p("voices", "cache")
+# False: ElevenLabs only for the fixed sentences (recorded once by tools/prewarm_voices.py);
+# Claude's new sentences use the local voice. True: record those too (natural voice, but the free
+# plan's 10,000 characters a month run out quickly).
+CLOUD_VOICE_NEW_SENTENCES = False
 CLOUD_VOICE_TIMEOUT_S = 4

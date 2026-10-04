@@ -60,8 +60,9 @@ How AI and hardware work together to remove those barriers (**now** = in the cur
 
 | Step | What SEE SENSE does | With what | |
 |---|---|---|---|
-| **Hear** | Hold the button and say where you want to go | Button, INMP441 microphone, **Vosk** (offline speech recognition) | now |
-| **Check** | Was that a real request, a command said another way, or misheard words? (~0.3 s) | **JEV** (TypeSafe) | now |
+| **Hear** | Hold the button and say anything: where you want to go, or a question | Button, INMP441 microphone, **ElevenLabs speech-to-text** when online, **Vosk** offline (its top 3 guesses) | now |
+| **Check** | A command said another way ("what do I do now" = next), or plain noise? (~0.3 s) | **JEV** (TypeSafe) | now |
+| **Understand** | Works out what you mean from your words, the photo and the conversation so far; asks back when unsure ("I heard … Where would you like to go?") | **Claude** | now |
 | **See and survey** | Looks through the chest camera; asks you to turn, tilt or step aside until it finds the nearest door | Pi Camera 3, **Claude Sonnet 5.5** | now |
 | **Plan** | Traces how far the walkway is clear and plans a route around what's in the way | **Claude** | now |
 | **Guide** | Speaks the route a few steps at a time in your earbuds; measures your turn from the camera: "Keep turning right" … "OK, stop." when you face the right way | Earbuds, **turn measurement** from the camera (OpenCV) | now |
@@ -198,9 +199,10 @@ strongly. **Don't connect motors straight to GPIO pins.**
 |---|---|---|
 | **Claude Sonnet 5.5** (Anthropic API) | Sees each photo; surveys, picks the nearest goal, traces the walkway, plans the route, handles blockers; returns a structured answer (look / ask / plan / arrived / answer) and a list of the important things it saw | Understands a whole room and reasons about routes, which fixed object detectors can't. Sonnet is fast and about $0.01–0.02 per look; Opus is one setting away |
 | **JEV** (TypeSafe) | Two quick checks: is what the mic heard a request, a command or misheard words? Which things Claude saw need a spoken warning, or nothing? | Answers in ~0.3 s with a confidence score, so misheard speech doesn't cost a slow Claude call, and the device stays quiet unless it matters. If unsure or unavailable, SEE SENSE carries on without it |
-| **Vosk** (small English model) | Turns the recording into text, on the Pi | Offline, private, light enough for a Pi; it only runs when the button is released |
-| **ElevenLabs** (Flash voice) + on-device cache | Natural voice; fixed sentences are recorded once and played from the Pi | Clear and pleasant; cached sentences play instantly and offline |
-| **espeak-ng** | Backup voice when a sentence isn't recorded and ElevenLabs can't be reached | Tiny and always available |
+| **ElevenLabs speech-to-text** (Scribe) | Turns the recording into text when online | Far more accurate than an offline model in a noisy room. Needs the key's "Speech to Text" permission; otherwise Vosk is used |
+| **Vosk** (small English model) | Turns the recording into text on the Pi when offline; gives its top 3 guesses so Claude can pick the one that makes sense | Offline, private, light enough for a Pi; it only runs when the button is released |
+| **ElevenLabs** (Flash voice) + on-device cache | Natural voice for the fixed sentences, recorded once and played from the Pi | Clear and pleasant; plays instantly and offline, and uses no credits after recording |
+| **espeak-ng** | The voice for Claude's answers and route steps (and backup for everything else) | Tiny, offline, always available, and free (recording every Claude sentence used up the free ElevenLabs quota) |
 | **OpenCV** | Measures how far you've turned by comparing camera frames (phase correlation, ~1° accuracy); prepares pictures for Claude and the live view | No compass or extra sensor needed |
 | **picamera2 / libcamera** | Runs the camera: full sensor width (16:9), continuous autofocus, short exposure so walking doesn't blur | The Pi's own camera software |
 | **gpiozero** (+ lgpio) | Reads the button; drives the motors once fitted | Simple, and supports the Pi 5 |
@@ -223,7 +225,8 @@ on-device models, the Pi stays light (73 MB to install, no PyTorch) and cool.
 | `jev.py` | JEV: what did they say? Which things need an alert? |
 | `motion.py` | How far you turned, from the camera picture |
 | `camera.py` | Pi Camera (autofocus, full width, short exposure), webcam, phone, video |
-| `voice.py` | Push-to-talk microphone + Vosk |
+| `voice.py` | Push-to-talk microphone; ElevenLabs speech-to-text, or Vosk offline |
+| `net.py` | Says when the internet is lost or back; reconnects the Wi-Fi |
 | `speech.py`, `voices.py` | Speaking: cached ElevenLabs recordings, local voice as backup |
 | `liveview.py` | The live camera view in a browser |
 | `controls.py` | Button, preview-window keys, typed requests |
@@ -232,7 +235,7 @@ on-device models, the Pi stays light (73 MB to install, no PyTorch) and cool.
 | `config.py` | Every setting and pin |
 | `pi/` | Setup, earbud pairing, mic / camera checks, sensor test, autostart |
 | `tools/` | Build the Pi upload folder; record the fixed sentences |
-| `tests/` | 27 automated tests with stand-ins for Claude and JEV |
+| `tests/` | 38 automated tests with stand-ins for Claude and JEV |
 | `docs/` | 90-second explainer video script and pitch deck content |
 
 ---
@@ -243,7 +246,7 @@ on-device models, the Pi stays light (73 MB to install, no PyTorch) and cool.
 
 | Do / hear | What happens |
 |---|---|
-| **Hold** the button, speak, release | A new request ("take me to the exit", "find me a free seat", "where's the counter?") or the answer to a question |
+| **Hold** the button, speak, release | Anything, in your own words: a place ("take me to the exit", "I need the toilet"), something to find ("find me a free seat"), a question ("what's in front of me?", "is the door open?"), a follow-up ("how far now?"), a change of plan, or the answer to its question |
 | **Press** the button | The next step. Every 2 steps it takes a new photo and updates the route |
 | Say "next", "repeat", "look again", "stop" (or in your own words: "what do I do now", "cancel that") | Same as the names say |
 | "Turn right about 90 degrees." … "Keep turning right." … "OK, stop." | Turn slowly; it measures the turn from the camera and says "OK, stop." when you've turned far enough |
@@ -260,8 +263,13 @@ on-device models, the Pi stays light (73 MB to install, no PyTorch) and cool.
 - **Natural voice offline** for every fixed sentence.
 - **Live view** (`--stream`): a helper, trainer or demo audience sees what the camera sees and the
   sentence spoken, in any browser.
-- **Self-checks:** says when the camera is missing or disconnected, when it can't reach the
-  internet, or when route planning isn't set up.
+- **Understands what you mean:** your words, the photo and the conversation so far (kept for 5
+  minutes) go to Claude together, so questions, follow-ups and "the other one" make sense, and
+  misheard words are worked out or asked about.
+- **Internet notices:** "I've lost the internet… I'm trying to reconnect." and "The internet is
+  back." It checks every 5 s, and while offline asks the Pi to reconnect the Wi-Fi every 30 s.
+- **Self-checks:** says when the camera is missing or disconnected, or when route planning isn't
+  set up.
 - **Starts at boot** with no screen or keyboard.
 
 **Ready in software, waiting for the hardware:** turn-by-vibration, a short pulse on the side of
@@ -326,7 +334,7 @@ distance ahead and the 4 motors). Anyone on the same network can open it: use a 
 |---|---|
 | `ANTHROPIC_API_KEY` (+ `ANTHROPIC_WORKSPACE_ID` if the key isn't workspace-scoped) | Claude: seeing and planning (**required**) |
 | `TYPESAFE_API_KEY` | JEV (optional: without it, speech goes straight to Claude and nothing extra is announced) |
-| `ELEVENLABS_API_KEY` | Natural voice (optional: the local voice is used without it) |
+| `ELEVENLABS_API_KEY` | Natural voice for the fixed sentences, and speech-to-text (optional). In ElevenLabs, give the key the **Text to Speech** and **Speech to Text** permissions. The free plan has 10,000 characters a month |
 
 ### Try it on a laptop
 ```powershell
@@ -335,7 +343,7 @@ python -m pip install -r requirements.txt
 copy .env.example .env                                        # add your keys
 python main.py --source 0 --show                              # webcam
 python main.py --source http://<PHONE_IP>:4747/video --show   # phone camera (DroidCam)
-python tests/test_seesense.py                                # 27 tests, no hardware or internet needed
+python tests/test_seesense.py                                # 38 tests, no hardware or internet needed
 ```
 Type a request in the terminal, or in the preview window press **v** to talk (v again to send),
 **n**/space = next step, **l** = look again, **r** = repeat, **s** = stop, **q** = quit.
@@ -367,16 +375,18 @@ The ElevenLabs voice and the live view use Python's own web tools: no extra pack
   ears more than planned, and turning is guided by spoken cues ("Keep turning right", "OK, stop.")
   rather than a vibration. There is **no obstacle warning that works without the internet**: the
   cane is the only protection against what Claude doesn't mention.
-- **Needs internet** for Claude (seeing and planning). Without it, SEE SENSE says so and can't
-  guide. It doesn't yet warn the moment the network drops; you find out at the next request.
+- **Needs internet** for Claude (seeing and planning). Without it, SEE SENSE says so (within about
+  10 s of losing it), tries to reconnect, and can't guide until it's back.
 - **Answers take seconds:** 3–5 s per look on a good connection; the first Pi run saw 6–29 s
   (pictures are now smaller, and it says "Still looking."; being measured again).
 - **It only knows you've reached a chair from the next photo,** so the timing of "the chair is right
   in front of you" is approximate until the distance sensor is fitted.
 - **Indoor wayfinding, not street safety.** No traffic warnings. **Keep using the cane.**
 - **Distances are estimates** ("about 4 steps"); it re-checks every 2 steps.
-- **Speech recognition can mishear** in noisy rooms (Vosk small model). JEV catches clear nonsense,
-  not every mistake.
+- **Speech recognition can mishear,** especially offline (Vosk small model). Claude works out the
+  likely meaning or asks back, but each misunderstanding costs a few seconds.
+- **ElevenLabs credits:** the free plan's 10,000 characters a month can run out. Then the fixed
+  sentences still play (they're recorded), and everything else uses the local voice.
 - **Turn measurement** needs a textured view; a blank wall or fast turning can confuse it.
 - **English only.**
 - **Privacy:** photos go to Claude during a request (nothing is stored on the device); JEV gets text
@@ -395,15 +405,12 @@ The ElevenLabs voice and the live view use Python's own web tools: no extra pack
 3. **Test with blind users** and tune the timing, wording and vibration patterns with them.
 4. **Faster answers:** smaller pictures, streaming the reply, and caching the instructions, to bring
    each look under 3 s on the Pi.
-5. **Better speech recognition:** a cloud speech-to-text (e.g. ElevenLabs) when online, Vosk when
-   offline.
-6. **Network alerts:** "Internet lost" / "Internet is back" the moment it happens.
-7. **More safety sensing:** a second distance sensor pointing down for steps and drops; one at head
+5. **More safety sensing:** a second distance sensor pointing down for steps and drops; one at head
    height.
-8. **Remember familiar buildings:** keep what was seen, so the second visit is faster and needs less
+6. **Remember familiar buildings:** keep what was seen, so the second visit is faster and needs less
    internet.
-9. **Offline fallback:** a small on-device detector for "door ahead" / "person ahead" when there's no
+7. **Offline fallback:** a small on-device detector for "door ahead" / "person ahead" when there's no
    internet.
-10. **More languages,** starting with Malayalam and Hindi.
-11. **A wearable build:** one compact case, a single battery, a haptic belt or vest.
-12. **Pilots** with a blind school, college or hospital.
+8. **More languages,** starting with Malayalam and Hindi.
+9. **A wearable build:** one compact case, a single battery, a haptic belt or vest.
+10. **Pilots** with a blind school, college or hospital.

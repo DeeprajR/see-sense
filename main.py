@@ -23,7 +23,8 @@ from distance import DistanceSensor
 from haptics import Haptics
 from jev import Jev, warning
 from motion import YawEstimator
-from planner import MESSAGES, Planner, PlannerError
+from net import Network
+from planner import MESSAGES, OFFLINE, Planner, PlannerError
 from speech import Speaker, wait_quiet
 from voice import Listener, clean
 from voices import CloudVoices
@@ -46,10 +47,12 @@ CAMERA_LOST = "Camera disconnected."
 PRESS_WHEN_DONE = "Press the button when you're done."
 KEEP_TURNING = {"left": "Keep turning left.", "right": "Keep turning right."}
 TURN_DONE = "OK, stop."
+NET_LOST = "I've lost the internet, so I can't look or plan right now. I'm trying to reconnect."
+NET_BACK = "The internet is back."
 FIXED_SENTENCES = [READY, LOOKING, LOOKING_AGAIN, STILL_LOOKING, NO_ROUTE, ASK_HINT, NOT_HEARD,
                    UNCLEAR, PRESS_WHEN_DONE,
                    NOTHING_TO_REPEAT, STOPPED, OBSTACLE, MIC_MISSING, CAMERA_MISSING, CAMERA_LOST,
-                   *KEEP_TURNING.values(), TURN_DONE, *MESSAGES]
+                   *KEEP_TURNING.values(), TURN_DONE, NET_LOST, NET_BACK, *MESSAGES]
 
 # Short spoken commands (anything else is a new request, or the answer to Claude's question).
 COMMANDS = {
@@ -89,6 +92,7 @@ class App:
         self.frame = None
         self.question = ""              # Claude's last question to the wearer (for JEV)
         self.last_seen = ""             # Claude's note on the latest photo (live view)
+        self.net = None                 # started in run(): says when the internet is lost / back
         self.live = None
         if args.stream:
             from liveview import LiveView
@@ -136,10 +140,10 @@ class App:
                 self.say(MIC_MISSING)
         elif kind == "ptt_stop":
             self.listener.stop_capture()
-        elif kind == "text":
-            self.on_text(action[1])
+        elif kind == "text":                            # ("text", words[, other guesses])
+            self.on_text(action[1], action[2] if len(action) > 2 else [])
         elif kind == "checked":                         # JEV's verdict on what was said
-            self.route(action[1], action[2])
+            self.route(action[1], action[2], action[3])
         elif kind == "next":
             self.next_step()
         elif kind == "look":
@@ -149,51 +153,55 @@ class App:
         elif kind == "stop":
             self.stop()
 
-    def on_text(self, text: str):
-        print(f"[voice] heard: {text!r}")
+    def on_text(self, text: str, guesses: list[str] = ()):
+        print(f"[voice] heard: {text!r}" + (f" (or: {', '.join(map(repr, guesses))})" if guesses else ""))
         text = clean(text)
+        guesses = [clean(g) for g in guesses if clean(g)]
         if not text:
             self.say(NOT_HEARD)
             return
         command = parse_command(text)                  # the usual short commands: instant
         if command:
-            self.route(text, command)
-        elif self.jev.available:                        # JEV: request, command or misheard? (~0.3 s)
+            self.route(text, command, guesses)
+        elif self.jev.available:                        # JEV: a command said another way, or noise?
             question = self.question if self.waiting_answer else ""
 
             def check():
                 label = self.jev.check_speech(text, question)
-                self.controls.actions.put(("checked", text, label))
+                self.controls.actions.put(("checked", text, label, guesses))
             threading.Thread(target=check, daemon=True).start()
         else:
-            self.route(text, None)
+            self.route(text, None, guesses)
 
-    def route(self, text: str, label: str | None):
-        """Act on what was said. label: a command, "unclear", or None/"request"/"answer"."""
+    def route(self, text: str, label: str | None, guesses: list[str] = ()):
+        """Act on what was said. label: a command, "unclear", or None (Claude works it out)."""
         if label == "stop":
             self.stop()
         elif label == "next":
             self.next_step()
         elif label == "repeat":
             self.say(self.last_said or NOTHING_TO_REPEAT)
-        elif label == "look":
+        elif label == "look" and self.planner.has_goal:
             self.look_again()
         elif label == "unclear":
-            self.say(UNCLEAR)                           # misheard: don't spend a Claude call on it
-        elif self.waiting_answer:
-            self.waiting_answer = False
-            self.think(f'They answered: "{text}"')
+            self.say(UNCLEAR)                           # plain noise: don't spend a Claude call on it
         else:
-            self.start(text)
+            self.ask(text, list(guesses))               # a request, a question, a follow-up, an answer
 
     # --- guiding ---------------------------------------------------------------------
 
-    def start(self, goal: str):
-        self.gen += 1                                   # a new request replaces the old one
+    def ask(self, text: str, guesses: list[str]):
+        """Anything they said goes to Claude, with the photo and the conversation so far: it works
+        out what they mean (or asks back) and answers, guides, or changes the plan."""
+        if self.net and self.net.online is False:
+            self.say(OFFLINE)                           # say so at once, no waiting for a timeout
+            return
+        self.gen += 1                                   # replaces anything still being worked on
+        question = self.question if self.waiting_answer else ""
         self.waiting_answer = False
-        self.planner.begin(goal, self.yaw.yaw)
+        note = self.planner.hear(text, guesses, self.yaw.yaw, question)
         self.say(LOOKING)
-        self.think()
+        self.think(note)
 
     def stop(self):
         self.gen += 1
@@ -283,6 +291,20 @@ class App:
             if not cancelled():         # a newer request owns the flag otherwise
                 self.thinking = False
 
+    def on_network(self, online: bool):
+        """The internet was lost or came back (from net.Network's background check)."""
+        was = getattr(self, "_was_online", None)
+        self._was_online = online
+        print(f"[net] {'online' if online else 'OFFLINE'}")
+        if not online:
+            self.say(NET_LOST)
+        elif was is False:                              # back after being lost: say so, retry at once
+            self.say(NET_BACK)
+            self.planner._offline_until = self.jev._offline_until = 0.0
+            self.listener._cloud_off_until = 0.0
+            if self.speaker.cloud is not None:
+                self.speaker.cloud._offline_until = 0.0
+
     def notice(self, objects: list[dict], told: str, cancelled):
         """JEV picks which things Claude saw need an extra alert: say it, or buzz on its side."""
         labels = self.jev.relevance(objects, told)
@@ -369,7 +391,8 @@ class App:
             self.speaker.say(CAMERA_MISSING, urgent=True)   # the wearer can't see the terminal
             time.sleep(3)
             raise
-        self.listener.start(lambda text: self.controls.actions.put(("text", text)))
+        self.listener.start(lambda text, guesses: self.controls.actions.put(("text", text, guesses)))
+        self.net = Network(self.on_network)
         self.say(READY if self.planner.client else
                  f"See Sense started, but route planning is off: {self.planner.reason}.", haptic="ready")
         print(HELP)
@@ -423,6 +446,8 @@ def draw_overlay(img, app: App):
              "thinking..." if app.thinking else ("goal: " + app.planner.goal if app.planner.goal else "idle")]
     if app.planner.steps:
         lines.append(f"step {app.planner.step_index}/{len(app.planner.steps)}")
+    if app.net and app.net.online is False:
+        lines.append("OFFLINE: reconnecting")
 
     def text(t, y, color, size=0.9):              # dark shadow first, so it reads on any background
         x, th, o = int(12 * s), max(1, int(2 * s)), max(1, int(2 * s))
