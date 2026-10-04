@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start SENSE Wayfinder automatically at boot -- no screen, keyboard or SSH needed.
+# Start SEE SENSE automatically at boot -- no screen, keyboard or SSH needed.
 #
 #   bash pi/install_autostart.sh            # enable
 #   bash pi/install_autostart.sh --stream   # enable, with the live camera view on port 8000
@@ -12,13 +12,13 @@ set -euo pipefail
 
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 UNIT_DIR="$HOME/.config/systemd/user"
-UNIT="$UNIT_DIR/wayfinder.service"
+UNIT="$UNIT_DIR/seesense.service"
 
 if [[ "${1:-}" == "--remove" ]]; then
-    systemctl --user disable --now wayfinder.service 2>/dev/null || true
+    systemctl --user disable --now seesense.service 2>/dev/null || true
     rm -f "$UNIT"
     systemctl --user daemon-reload
-    echo "Wayfinder autostart removed."
+    echo "SEE SENSE autostart removed."
     exit 0
 fi
 
@@ -29,11 +29,17 @@ if systemctl --user is-enabled sense.service >/dev/null 2>&1; then
     systemctl --user disable --now sense.service
     echo "Turned off the full SENSE service (it would compete for the camera)."
 fi
+# This app used to be called Wayfinder: remove its old service so only one runs.
+if [[ -f "$UNIT_DIR/wayfinder.service" ]]; then
+    systemctl --user disable --now wayfinder.service 2>/dev/null || true
+    rm -f "$UNIT_DIR/wayfinder.service"
+    echo "Removed the old wayfinder service (renamed to seesense)."
+fi
 
 mkdir -p "$UNIT_DIR"
 cat > "$UNIT" <<EOF
 [Unit]
-Description=SENSE Wayfinder - guided to where you want to go
+Description=SEE SENSE - guided to where you want to go
 After=pipewire.service wireplumber.service network-online.target
 Wants=pipewire.service wireplumber.service
 
@@ -53,10 +59,10 @@ EOF
 # Lingering lets user services (and PipeWire) start at boot without anyone logging in.
 sudo loginctl enable-linger "$USER"
 systemctl --user daemon-reload
-systemctl --user enable --now wayfinder.service
+systemctl --user enable --now seesense.service
 
-echo "Wayfinder will now start at every boot."
-echo "  Logs:     journalctl --user -u wayfinder -f"
-echo "  Stop:     systemctl --user stop wayfinder"
-echo "  Restart:  systemctl --user restart wayfinder"
+echo "SEE SENSE will now start at every boot."
+echo "  Logs:     journalctl --user -u seesense -f"
+echo "  Stop:     systemctl --user stop seesense"
+echo "  Restart:  systemctl --user restart seesense"
 if [[ -n "$EXTRA" ]]; then echo "  Live view: http://$(hostname -I | cut -d' ' -f1):8000"; fi

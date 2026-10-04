@@ -1,4 +1,4 @@
-"""Record Wayfinder's fixed sentences once with ElevenLabs, so they play instantly and offline.
+"""Record SEE SENSE's fixed sentences once with ElevenLabs, so they play instantly and offline.
 
     python tools/prewarm_voices.py
 

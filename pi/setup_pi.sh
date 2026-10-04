@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# One-time setup of SENSE Wayfinder on a Raspberry Pi 5 (Raspberry Pi OS Bookworm, 64-bit).
+# One-time setup of SEE SENSE on a Raspberry Pi 5 (Raspberry Pi OS Bookworm, 64-bit).
 #
-#   cd ~/wayfinder && bash pi/setup_pi.sh
+#   cd ~/seesense && bash pi/setup_pi.sh
 #
-# Safe to re-run: every step skips work that is already done. Installs only what Wayfinder uses:
+# Safe to re-run: every step skips work that is already done. Installs only what SEE SENSE uses:
 # no AI models on the Pi (Claude does the seeing), so no PyTorch or YOLO.
 set -euo pipefail
 

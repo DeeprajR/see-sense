@@ -1,4 +1,4 @@
-"""Settings for SENSE Wayfinder: hold the button, say where you want to go, get guided there."""
+"""Settings for SEE SENSE: hold the button, say where you want to go, get guided there."""
 
 import os
 
@@ -47,7 +47,7 @@ OFFLINE_RETRY_S = 30           # after a network failure, wait this long before 
 
 # --- JEV (TypeSafe): quick checks on short text (optional) ----------------------------
 # A: is what the mic heard a request, a command, or misheard words?  B: which things Claude saw
-# need an extra alert (say / buzz / ignore)? Without the key, Wayfinder works without these.
+# need an extra alert (say / buzz / ignore)? Without the key, SEE SENSE works without these.
 JEV_API_KEY = os.environ.get("TYPESAFE_API_KEY", "")
 JEV_TIMEOUT_S = 2.5
 JEV_MIN_CONFIDENCE = 0.6       # below this JEV's answer is ignored (speech goes to Claude)

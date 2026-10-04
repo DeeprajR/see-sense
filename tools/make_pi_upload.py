@@ -1,6 +1,6 @@
-"""Build the folder to copy to the Raspberry Pi: exactly what Wayfinder needs there.
+"""Build the folder to copy to the Raspberry Pi: exactly what SEE SENSE needs there.
 
-    python tools/make_pi_upload.py              # -> dist/wayfinder/  (not committed)
+    python tools/make_pi_upload.py              # -> dist/seesense/  (not committed)
     python tools/make_pi_upload.py --no-env     # leave the API keys (.env) out
 
 The folder is rebuilt from scratch every run, so edit the files here, never in dist/.
@@ -14,7 +14,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 APP = os.path.normpath(os.path.join(HERE, ".."))
-OUT = os.path.join(APP, "dist", "wayfinder")
+OUT = os.path.join(APP, "dist", "seesense")
 
 MODULES = ["main.py", "config.py", "camera.py", "controls.py", "distance.py", "haptics.py",
            "jev.py", "liveview.py", "motion.py", "planner.py", "speech.py", "voice.py", "voices.py"]
@@ -67,7 +67,7 @@ def main():
         print("  includes .env with your API keys: keep this folder private")
     print("\nCopy to the Pi, then set it up once:\n"
           f"  scp -r \"{OUT}\" <user>@<PI_IP>:~/\n"
-          "  ssh <user>@<PI_IP> \"cd wayfinder && bash pi/setup_pi.sh\"")
+          "  ssh <user>@<PI_IP> \"cd seesense && bash pi/setup_pi.sh\"")
 
 
 if __name__ == "__main__":

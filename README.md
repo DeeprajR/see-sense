@@ -1,8 +1,8 @@
-# SENSE Wayfinder
+# SEE SENSE
 
 **Hold the button, say where you want to go, and get guided there.**
 
-SENSE Wayfinder is a wearable that guides a blind person to a place they can't see indoors, such as
+SEE SENSE is a wearable that guides a blind person to a place they can't see indoors, such as
 the door, the exit, a free seat or the counter, one step at a time. It is the focused version of SENSE, built by team Jugaad Junction in Claude Impact Lab - Superhhuman Lab hackathon conducted at Tinkerhub calicut.
 
 > *We give you another way to find your way.*
@@ -26,7 +26,7 @@ the door, the exit, a free seat or the counter, one step at a time. It is the fo
 - **Blind and low-vision adults who move around on their own**, in places they don't know well:
   colleges, offices, hospitals, stations, shops, event halls. Mainly in **Indian cities**, where buildings change often and have few accessible signs.
 - They already use a **white cane** (some a guide dog) and often a phone with a screen reader.
-  **Wayfinder works alongside the cane. It does not replace it.**
+  **SEE SENSE works alongside the cane. It does not replace it.**
 - They are independent and capable: they don't need something that talks all the time. They need
   help at one moment: **"where is it, and how do I get there?"**
 - ⚠️ **We have not tested with blind users yet.** This is our understanding so far; the next step is
@@ -58,7 +58,7 @@ What makes this difficult, impossible or inaccessible today:
 
 How AI and hardware work together to remove those barriers (**now** = in the current build):
 
-| Step | What Wayfinder does | With what | |
+| Step | What SEE SENSE does | With what | |
 |---|---|---|---|
 | **Hear** | Hold the button and say where you want to go | Button, INMP441 microphone, **Vosk** (offline speech recognition) | now |
 | **Check** | Was that a real request, a command said another way, or misheard words? (~0.3 s) | **JEV** (TypeSafe) | now |
@@ -105,7 +105,7 @@ Hold button: "Take me to the exit"
 
 What the person can do now that they couldn't before:
 
-| Before | With Wayfinder |
+| Before | With SEE SENSE |
 |---|---|
 | Walks into an unfamiliar room and has to ask someone where the door is | Holds the button: **"Take me to the exit"** |
 | Turns around, unsure which way to face | "Turn right about 90 degrees" … "OK, stop." when they're facing the door, measured as they turn |
@@ -138,9 +138,9 @@ What the person can do now that they couldn't before:
 | **4 vibration motors** (left, front-left, front-right, right), from old phones | Left / right = which way to turn; front = something close; short pulse on a side = something worth knowing there | Direction by touch keeps the ears free and needs fewer words |
 | **4 NPN transistors** (2N2222 / S8050) + 1 kΩ resistors + 1N4007 diodes | Switch each motor from a GPIO pin | A pin gives ~16 mA; a motor needs 50–90 mA. The diode absorbs the spike when a motor stops |
 | **3.7 V LiPo + TP4056 charger** (protected) | Powers the motors only | Keeps motor noise off the Pi's power |
-| **VL53L0X or VL53L1X distance sensor** (ToF), next to the camera | Measures the distance straight ahead ~20 times a second: buzz under 1 m, "Stop" under 0.5 m; tells Wayfinder the moment you reach a chair to move | Catches walls, poles and glass the camera may miss; works with no AI and no internet. Either chip works (detected automatically) |
+| **VL53L0X or VL53L1X distance sensor** (ToF), next to the camera | Measures the distance straight ahead ~20 times a second: buzz under 1 m, "Stop" under 0.5 m; tells SEE SENSE the moment you reach a chair to move | Catches walls, poles and glass the camera may miss; works with no AI and no internet. Either chip works (detected automatically) |
 
-Until they're fitted, Wayfinder simply runs without them: no setting needs changing.
+Until they're fitted, SEE SENSE simply runs without them: no setting needs changing.
 
 #### Pins (Raspberry Pi 5): used now, and reserved for the planned parts
 ```
@@ -197,7 +197,7 @@ strongly. **Don't connect motors straight to GPIO pins.**
 | Component | How it's used | Why |
 |---|---|---|
 | **Claude Sonnet 5.5** (Anthropic API) | Sees each photo; surveys, picks the nearest goal, traces the walkway, plans the route, handles blockers; returns a structured answer (look / ask / plan / arrived / answer) and a list of the important things it saw | Understands a whole room and reasons about routes, which fixed object detectors can't. Sonnet is fast and about $0.01–0.02 per look; Opus is one setting away |
-| **JEV** (TypeSafe) | Two quick checks: is what the mic heard a request, a command or misheard words? Which things Claude saw need a spoken warning, or nothing? | Answers in ~0.3 s with a confidence score, so misheard speech doesn't cost a slow Claude call, and the device stays quiet unless it matters. If unsure or unavailable, Wayfinder carries on without it |
+| **JEV** (TypeSafe) | Two quick checks: is what the mic heard a request, a command or misheard words? Which things Claude saw need a spoken warning, or nothing? | Answers in ~0.3 s with a confidence score, so misheard speech doesn't cost a slow Claude call, and the device stays quiet unless it matters. If unsure or unavailable, SEE SENSE carries on without it |
 | **Vosk** (small English model) | Turns the recording into text, on the Pi | Offline, private, light enough for a Pi; it only runs when the button is released |
 | **ElevenLabs** (Flash voice) + on-device cache | Natural voice; fixed sentences are recorded once and played from the Pi | Clear and pleasant; cached sentences play instantly and offline |
 | **espeak-ng** | Backup voice when a sentence isn't recorded and ElevenLabs can't be reached | Tiny and always available |
@@ -207,7 +207,7 @@ strongly. **Don't connect motors straight to GPIO pins.**
 | **smbus2 + VL53L0X / VL53L1X driver** | Detects and reads the distance sensor once fitted | Only the driver for your chip is installed |
 | **sounddevice, PipeWire, BlueZ** | Microphone in; sound out to the Bluetooth earbuds | Works with the digital mic and Bluetooth audio |
 | **Python's built-in web server** | The live camera view in a browser (`--stream`) | No extra package; only works while someone is watching |
-| **systemd** (user service) | Starts Wayfinder at boot and restarts it if it stops | No screen, keyboard or SSH needed at a demo |
+| **systemd** (user service) | Starts SEE SENSE at boot and restarts it if it stops | No screen, keyboard or SSH needed at a demo |
 | **Python 3** | All of it | Every library needed exists; quick to build and change |
 
 **Why no YOLO or other model on the Pi?** Finding a door and planning a route needs understanding
@@ -266,7 +266,7 @@ on-device models, the Pi stays light (73 MB to install, no PyTorch) and cool.
 
 **Ready in software, waiting for the hardware:** turn-by-vibration, a short pulse on the side of
 minor things, three pulses on arrival, and the distance sensor's offline obstacle warning (buzz
-under 1 m, "Stop" under 0.5 m) that also tells Wayfinder the exact moment you reach a chair.
+under 1 m, "Stop" under 0.5 m) that also tells SEE SENSE the exact moment you reach a chair.
 
 **Measured:**
 
@@ -285,18 +285,18 @@ under 1 m, "Stop" under 0.5 m) that also tells Wayfinder the exact moment you re
 ### On the Raspberry Pi
 
 **1. Get the code onto the Pi** (either way):
-- **Clone:** `git clone <repo-url> ~/wayfinder`, then copy your keys from the laptop:
-  `scp .env <user>@<PI_IP>:~/wayfinder/` (keys are never in the repository).
+- **Clone:** `git clone <repo-url> ~/seesense`, then copy your keys from the laptop:
+  `scp .env <user>@<PI_IP>:~/seesense/` (keys are never in the repository).
 - **Or the upload folder** (includes `.env` and the speech model):
   ```powershell
-  cd wayfinder
-  python tools/make_pi_upload.py            # -> dist\wayfinder   (--no-env leaves the keys out)
-  scp -r dist\wayfinder <user>@<PI_IP>:~/
+  cd seesense
+  python tools/make_pi_upload.py            # -> dist\seesense   (--no-env leaves the keys out)
+  scp -r dist\seesense <user>@<PI_IP>:~/
   ```
 
 **2. Set up and test** (on the Pi, Raspberry Pi OS Bookworm 64-bit):
 ```bash
-cd ~/wayfinder
+cd ~/seesense
 bash pi/setup_pi.sh          # packages, mic driver, speech model; says what's missing
 sudo reboot                  # first time only (mic driver)
 bash pi/pair_earbuds.sh      # pick the earbuds from the list
@@ -311,7 +311,7 @@ If the picture is upside down, set `PICAM_ROTATE_180 = True` in `config.py`.
 **When the distance sensor is fitted:** run `bash pi/setup_pi.sh` once more (it detects the chip
 and installs only its driver), then check it with `python pi/test_tof.py`.
 
-**3. Update later:** `cd ~/wayfinder && git pull && systemctl --user restart wayfinder`
+**3. Update later:** `cd ~/seesense && git pull && systemctl --user restart seesense`
 (or rebuild and copy the upload folder again).
 
 ### Live view
@@ -330,18 +330,18 @@ distance ahead and the 4 motors). Anyone on the same network can open it: use a 
 
 ### Try it on a laptop
 ```powershell
-cd wayfinder
+cd seesense
 python -m pip install -r requirements.txt
 copy .env.example .env                                        # add your keys
 python main.py --source 0 --show                              # webcam
 python main.py --source http://<PHONE_IP>:4747/video --show   # phone camera (DroidCam)
-python tests/test_wayfinder.py                                # 27 tests, no hardware or internet needed
+python tests/test_seesense.py                                # 27 tests, no hardware or internet needed
 ```
 Type a request in the terminal, or in the preview window press **v** to talk (v again to send),
 **n**/space = next step, **l** = look again, **r** = repeat, **s** = stop, **q** = quit.
 
 ### What gets installed on the Pi
-Only what Wayfinder uses (`pi/setup_pi.sh`):
+Only what SEE SENSE uses (`pi/setup_pi.sh`):
 
 | Package | For |
 |---|---|
@@ -367,7 +367,7 @@ The ElevenLabs voice and the live view use Python's own web tools: no extra pack
   ears more than planned, and turning is guided by spoken cues ("Keep turning right", "OK, stop.")
   rather than a vibration. There is **no obstacle warning that works without the internet**: the
   cane is the only protection against what Claude doesn't mention.
-- **Needs internet** for Claude (seeing and planning). Without it, Wayfinder says so and can't
+- **Needs internet** for Claude (seeing and planning). Without it, SEE SENSE says so and can't
   guide. It doesn't yet warn the moment the network drops; you find out at the next request.
 - **Answers take seconds:** 3–5 s per look on a good connection; the first Pi run saw 6–29 s
   (pictures are now smaller, and it says "Still looking."; being measured again).

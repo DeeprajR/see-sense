@@ -1,6 +1,6 @@
-"""Tests for SENSE Wayfinder that need no camera, mic, motors, sensor or internet:
+"""Tests for SEE SENSE that need no camera, mic, motors, sensor or internet:
 
-    python tests/test_wayfinder.py
+    python tests/test_seesense.py
 
 Claude is replaced by a fake that returns scripted answers, so the whole guiding flow
 (look -> turn -> plan -> next steps -> look again -> arrived) is checked offline.

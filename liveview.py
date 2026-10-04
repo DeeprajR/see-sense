@@ -1,4 +1,4 @@
-"""Live view: watch what the camera sees, and what Wayfinder is doing, in a web browser.
+"""Live view: watch what the camera sees, and what SEE SENSE is doing, in a web browser.
 
     python main.py --stream             then open  http://<PI_IP>:8000  on a laptop or phone
                                         (same Wi-Fi as the Pi)
@@ -16,10 +16,10 @@ import time
 import config
 
 PAGE = b"""<!doctype html><html><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1"><title>Wayfinder live view</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>SEE SENSE live view</title>
 <style>body{margin:0;background:#111;color:#eee;font:16px system-ui,sans-serif;text-align:center}
 img{width:100%;max-width:1024px;display:block;margin:0 auto}p{margin:8px}</style></head>
-<body><img src="/stream" alt="Live camera view from Wayfinder"><p>SENSE Wayfinder: live camera view</p>
+<body><img src="/stream" alt="Live camera view from SEE SENSE"><p>SEE SENSE: live camera view</p>
 </body></html>"""
 
 

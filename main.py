@@ -1,4 +1,4 @@
-"""SENSE Wayfinder: hold the button, say where you want to go, and get guided there.
+"""SEE SENSE: hold the button, say where you want to go, and get guided there.
 
     python main.py                          # on the Pi (Pi Camera, button, mic, motors, sensor)
     python main.py --stream                 # ...and watch the camera at http://<PI_IP>:8000
@@ -29,7 +29,7 @@ from voice import Listener, clean
 from voices import CloudVoices
 
 # Fixed sentences (tools/prewarm_voices.py records them, so they play instantly and offline).
-READY = "Wayfinder ready. Hold the button and tell me where you want to go."
+READY = "See Sense ready. Hold the button and tell me where you want to go."
 LOOKING = "Let me look."
 LOOKING_AGAIN = "Let me look again."
 STILL_LOOKING = "Still looking."
@@ -101,7 +101,7 @@ class App:
         self._last_buzz = self._last_warn = 0.0
         self._expected_until = 0.0      # a known blocker is right ahead: buzz, but don't say "Stop"
         self.running = True
-        print(f"[wayfinder] tts: {self.speaker.backend} | voice: "
+        print(f"[seesense] tts: {self.speaker.backend} | voice: "
               f"{'elevenlabs' if config.ELEVENLABS_API_KEY else 'local'} | haptics: {self.haptics.name} | "
               f"distance: {self.distance.model or 'none'} | claude: "
               f"{config.CLAUDE_MODEL if self.planner.client else 'off (' + self.planner.reason + ')'}"
@@ -371,7 +371,7 @@ class App:
             raise
         self.listener.start(lambda text: self.controls.actions.put(("text", text)))
         self.say(READY if self.planner.client else
-                 f"Wayfinder started, but route planning is off: {self.planner.reason}.", haptic="ready")
+                 f"See Sense started, but route planning is off: {self.planner.reason}.", haptic="ready")
         print(HELP)
         if self.args.show:
             import cv2
@@ -387,12 +387,12 @@ class App:
                 if self.live:
                     self.live.update(frame[..., :3], lambda img: draw_overlay(img, self))
                 if self.args.show:
-                    cv2.imshow("Wayfinder", draw_overlay(frame.copy(), self))
+                    cv2.imshow("SEE SENSE", draw_overlay(frame.copy(), self))
                     self.controls.key(cv2.waitKey(1))
                 frames += 1
                 if time.monotonic() - t_report >= 10:
                     temp, d = cpu_temp(), self.distance.read()
-                    print(f"[wayfinder] {frames / (time.monotonic() - t_report):.0f} fps, "
+                    print(f"[seesense] {frames / (time.monotonic() - t_report):.0f} fps, "
                           f"turned {self.yaw.yaw:+.0f} deg" + (f", cpu {temp:.0f} C" if temp else "")
                           + (f", ahead {d:.2f} m" if d is not None else ""))
                     frames, t_report = 0, time.monotonic()
@@ -411,7 +411,7 @@ class App:
 
 
 def draw_overlay(img, app: App):
-    """Status on the picture (preview window and live view): what Wayfinder is doing right now."""
+    """Status on the picture (preview window and live view): what SEE SENSE is doing right now."""
     import textwrap
 
     import cv2

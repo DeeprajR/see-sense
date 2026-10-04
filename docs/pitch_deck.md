@@ -1,7 +1,7 @@
-# SENSE Wayfinder: pitch deck content
+# SEE SENSE: pitch deck content
 
 **Format:** title, problem, who it's for, solution, demo, how it works, design principles, what
-it's built from, results and limits, ask. 10 slides, about 4–5 minutes.
+it's built from, results and limits, what's next, ask. 11 slides, about 5 minutes.
 Each slide has: the **headline** (one message), **on the slide** (keep it short),
 **speaker notes** (what you say) and a **visual** suggestion.
 
@@ -11,7 +11,7 @@ Every number comes from our own tests. Placeholders are in [brackets].
 
 ## 1. Title
 
-**Headline:** SENSE Wayfinder
+**Headline:** SEE SENSE
 
 **On the slide**
 - Hold the button. Say where you want to go. Get guided there.
@@ -71,7 +71,7 @@ about the room. They need help at the moment of 'where is it?'"
 5. **It clears the way:** "The chair is right in front of you. Push it to your left."
 6. **You arrive:** "The door is right in front of you. The handle is on the right."
 
-**Speaker notes:** "Wayfinder works like a sighted friend: it looks around first, finds the
+**Speaker notes:** "SEE SENSE works like a sighted friend: it looks around first, finds the
 nearest door, works out how far the way is clear, and if a chair is blocking it, tells you how to
 move it. Press the button for the next step. Every two steps, it looks again. Along the way it
 doesn't talk about everything it sees: only what you need, like someone walking toward you."
@@ -87,7 +87,7 @@ doesn't talk about everything it sees: only what you need, like someone walking 
 **On the slide:** the 90-second explainer video, or a live demo with the **live view** on the
 projector: the audience sees what the camera sees and the sentence it speaks.
 
-**Speaker notes:** "In our test, Wayfinder started facing a cupboard. It said there was no exit
+**Speaker notes:** "In our test, SEE SENSE started facing a cupboard. It said there was no exit
 in view and asked the user to turn right. It found a glass door about 5 steps away, warned that
 it's glass, and routed around the tables. 8 seconds, plus the time to turn. On the Raspberry
 Pi, in a real classroom, it found an open glass door to a balcony, with chairs in front of it."
@@ -110,7 +110,7 @@ Pi, in a real classroom, it found an open glass door to a balcony, with chairs i
 | JEV (TypeSafe) | In 0.3 s: was that a request, a command, or misheard words? Which things Claude saw need a spoken warning, or nothing? |
 | Button + offline speech recognition (Vosk) | Hold to speak, press for the next step |
 | Earbuds | Every instruction, in a natural voice (ElevenLabs) recorded once and stored on the device |
-| Live view | A helper, trainer or judge sees what Wayfinder sees, in any browser |
+| Live view | A helper, trainer or judge sees what SEE SENSE sees, in any browser |
 
 **Speaker notes:** "Two AIs, each doing what it's best at. Claude does the hard thinking:
 understanding the room and planning. JEV makes quick decisions in a third of a second: if the
@@ -118,7 +118,10 @@ microphone misheard you, it says so at once instead of spending a slow Claude lo
 which things are worth a warning, so the device stays quiet. The device itself is a Raspberry Pi
 with no AI models on it."
 
-**Visual:** a block diagram: mic → JEV → Claude; camera → Claude → JEV → earbuds.
+**Visual:** the architecture diagram, [`docs/architecture.png`](architecture.png) (PNG for the slide;
+`architecture.svg` scales to any size). Regenerate it with `python docs/make_architecture.py`.
+
+![SEE SENSE architecture](architecture.png)
 
 ---
 
@@ -135,7 +138,7 @@ with no AI models on it."
 - **Respectful:** never asks you to move a person or someone's wheelchair
 
 **Speaker notes:** "Blind people use their hearing to understand a room: footsteps, voices,
-echoes. So Wayfinder only speaks when it has something you need."
+echoes. So SEE SENSE only speaks when it has something you need."
 
 **Visual:** a person with earbuds, and a speech bubble that appears only at key moments.
 
@@ -192,7 +195,30 @@ most important part: testing with blind users."
 
 ---
 
-## 10. Team and ask
+## 10. What's next
+
+**Headline:** Next: feel the way, and a safety net that works offline
+
+**On the slide**
+
+| Next step | What it adds | Where it stands |
+|---|---|---|
+| **Haptic feedback:** 4 vibration motors (left, front-left, front-right, right) | Direction by touch instead of words: a pulse on the left or right until you face the right way; a long buzz on the front when something is close; a short pulse on the side of something minor; three pulses when you arrive | Software written and tested (simulated); motors to be fitted, driven through transistors |
+| **ToF distance sensor** (VL53L0X / VL53L1X), next to the camera | An obstacle warning with **no internet and no AI**: buzz under 1 m, "Stop" under 0.5 m. It also tells SEE SENSE the exact moment you reach a chair to move | Software written and tested (simulated readings); the chip is detected automatically |
+| **Testing with blind users** | Tune the wording, timing and vibration patterns with the people who'll use it | Our first priority |
+
+**Speaker notes:** "Two hardware pieces are next, and their software is already written and
+tested. Vibration motors, so direction is felt instead of spoken and the ears stay free for the
+room. And a distance sensor, so there's a safety net that works even without the internet:
+it buzzes when something is close and says 'Stop' when it's very close. Most important of all:
+testing with blind users."
+
+**Visual:** a body outline with the 4 motor positions, and the sensor next to the camera with
+its 1 m and 0.5 m zones.
+
+---
+
+## 11. Team and ask
 
 **Headline:** Help us test it
 
@@ -215,8 +241,8 @@ looking for people to test it with. Thank you."
 - **Privacy:** pictures go to Claude only during a request; nothing is stored on the device.
   JEV only gets short text (what was said, a list of things seen), never pictures. The live view
   is off unless started, and only reachable on the local network
-- **If the cloud fails:** without JEV, speech goes straight to Claude; without Claude, Wayfinder
+- **If the cloud fails:** without JEV, speech goes straight to Claude; without Claude, SEE SENSE
   says it can't plan right now
-- **Safety:** Wayfinder never says a path is safe; it works with the cane, not instead of it
-- **Speech:** recognised offline on the device; if it's misheard, Wayfinder asks you to say it again
+- **Safety:** SEE SENSE never says a path is safe; it works with the cane, not instead of it
+- **Speech:** recognised offline on the device; if it's misheard, SEE SENSE asks you to say it again
 - **Wiring and setup:** see the README

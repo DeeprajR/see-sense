@@ -4,8 +4,8 @@
     python pi/camera_check.py --ask "where is the door?"     # ...and Claude's answer
     python pi/camera_check.py --source 0                     # a webcam (laptop)
 
-Saves camera_check.jpg in the wayfinder folder. Copy it to the laptop to look at it:
-    scp <user>@<PI_IP>:~/wayfinder/camera_check.jpg .
+Saves camera_check.jpg in the app folder. Copy it to the laptop to look at it:
+    scp <user>@<PI_IP>:~/seesense/camera_check.jpg .
 """
 
 import argparse

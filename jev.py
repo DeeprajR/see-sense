@@ -6,7 +6,7 @@
   B. relevance(): after Claude has planned a route, which of the things it saw need an extra
      alert: say it, buzz on its side, or ignore it. Runs in the background; never delays the route.
 
-Without a key, offline, or unsure (low confidence), Wayfinder simply carries on without it:
+Without a key, offline, or unsure (low confidence), SEE SENSE simply carries on without it:
 speech goes to Claude as before and nothing extra is announced.
 """
 
