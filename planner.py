@@ -2,7 +2,7 @@
 clear what's blocking it, then guide a few steps at a time.
 
     "Take me to the exit"
-      -> LOOK     survey: "Turn right about 60 degrees." / "Tilt the camera up." / "Take one
+      -> LOOK     survey: "Turn your head right about 60 degrees." / "Tilt your head up." / "Take one
                   step to your left." (to see past a corner). Turns are measured from the camera.
       -> PLAN     "The nearest door is on your right, about 6 steps. Turn right about 90 degrees."
                   (turn guided by vibration) then "Walk about 3 steps."   (button = next step)
@@ -26,13 +26,22 @@ import time
 
 import config
 
-_BODY = "head" if config.CAMERA_MOUNT == "head" else "body"
+_HEAD = config.CAMERA_MOUNT == "head"
+_BODY = "head" if _HEAD else "body"
+_TILT = "your head" if _HEAD else "the camera"
+# A head camera shows where they look, which may not be where their body (and their walking) faces.
+_HEAD_NOTE = ("""
+
+The camera is on their head, so it shows where they are looking, not necessarily where their body \
+faces. During a survey they turn only their head. Before the first walking step, tell them to turn \
+their body to face where they're looking (e.g. "Now turn your body to face the same way."), and \
+give look and turn instructions as head movements ("Turn your head to the right about 60 degrees.").""" if _HEAD else "")
 
 SYSTEM = f"""You are SEE SENSE: you help a blind person get around indoors, using a camera worn on \
 their {config.CAMERA_MOUNT}. The camera faces where their {_BODY} faces: horizontal field of view \
 about {config.CAMERA_HFOV_DEG} degrees, the image centre is straight ahead. With each photo you get \
 which way it faces compared with where they stood when they asked (negative = left; measured from \
-the camera) and, when available, a distance sensor reading straight ahead.
+the camera) and, when available, a distance sensor reading straight ahead.{_HEAD_NOTE}
 
 They may ask for anything about getting around and the space around them: to be taken somewhere \
 ("take me to the exit", "I need the toilet"), to find something ("find me a free seat"), a question \
@@ -51,7 +60,7 @@ For a route, work in this order:
 1. SURVEY. Understand the surroundings before planning, and find the nearest goal (for "the exit" \
 or "go out": the nearest door or exit). Only if the goal and a clear way to it are plainly visible \
 in the first photo may you plan straight away. Otherwise choose "look" to see more: turn left or \
-right, tilt the camera up or down, or take one step to the side to see past a corner, a pillar or \
+right, tilt {_TILT} up or down, or take one step to the side to see past a corner, a pillar or \
 a table. Check both sides before giving up. Once you've found the nearest goal and can see the \
 first part of the way, plan: you'll get new photos as they walk. In "seen", note briefly what this photo shows and \
 where (left / ahead / right, rough distance): it is your memory, because older photos are dropped.
@@ -143,7 +152,7 @@ def default_say(turn) -> str:
     if d in ("left", "right") and (turn.action == "look" or deg >= 10):
         return f"Turn {d} about {deg} degrees." if deg else f"Turn to your {d}."
     if d in ("up", "down"):
-        return f"Tilt the camera {d}."
+        return f"Tilt {_TILT} {d}."
     if d in ("step_left", "step_right"):
         return f"Take one step to your {d[5:]}."
     return {"plan": "", "arrived": "You're there.", "look": "Let me look a little more."}.get(

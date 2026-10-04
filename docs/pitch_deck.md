@@ -21,7 +21,7 @@ Every number comes from our own tests. Placeholders are in [brackets].
 **Speaker notes:** "We built a wearable that guides a blind person to a place they can't see
 (a door, the exit, a seat) one step at a time."
 
-**Visual:** the wearable on a person's chest; one clean product photo.
+**Visual:** a person wearing it: the camera on the head; one clean product photo.
 
 ---
 
@@ -105,7 +105,7 @@ Pi, in a real classroom, it found an open glass door to a balcony, with chairs i
 
 | Part | Job |
 |---|---|
-| Chest camera | Claude's eyes; also measures how far you've turned (to about 1°) |
+| Head-mounted camera | Claude's eyes; also measures how far you've turned your head (to about 1°) |
 | Claude Sonnet 5.5 (Anthropic) | Understands the room, picks the nearest door, plans the route, deals with blockers |
 | JEV (TypeSafe) | In 0.3 s: was that a request, a command, or misheard words? Which things Claude saw need a spoken warning, or nothing? |
 | Button + offline speech recognition (Vosk) | Hold to speak, press for the next step |
@@ -153,7 +153,7 @@ echoes. So SEE SENSE only speaks when it has something you need."
 | Hardware | Software |
 |---|---|
 | Raspberry Pi 5 + Active Cooler | Claude Sonnet 5.5: seeing and planning |
-| Pi Camera 3 on the chest | JEV (TypeSafe): quick decisions on short text |
+| Pi Camera 3, head-mounted | JEV (TypeSafe): quick decisions on short text |
 | INMP441 microphone | Vosk: offline speech recognition |
 | Push button | ElevenLabs voice, cached on the device; espeak-ng as backup |
 | Bluetooth earbuds | OpenCV: measures turns from the camera |

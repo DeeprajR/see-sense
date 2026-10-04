@@ -24,12 +24,12 @@ def _load_env(path: str = _p(".env")):
 
 _load_env()
 
-# --- Camera (Pi Camera 3 on the chest) ------------------------------------------
+# --- Camera (Pi Camera 3, head-mounted) ------------------------------------------
 FRAME_SIZE = (1280, 720)       # webcams; the Pi Camera keeps width 1280 at its own shape (16:9)
 PICAM_ROTATE_180 = False       # True if the camera is mounted upside down (check: pi/camera_check.py)
 PICAM_FRAME_US = 33333         # 30 fps; also the longest exposure, so walking doesn't blur
 CAMERA_HFOV_DEG = 66           # Pi Camera 3: 66, Pi Camera 3 Wide: 102
-CAMERA_MOUNT = "chest"         # chest | head: "turn your body" vs "turn your head"
+CAMERA_MOUNT = "head"          # head | chest: "turn your head" vs "turn your body"
 YAW_MIN_RESPONSE = 0.05        # turn measurement skips frames it can't match (blur, blank)
 
 # --- Claude: sees the camera picture and plans the route ----------------------------

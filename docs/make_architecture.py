@@ -79,7 +79,7 @@ def main():
     # Wearer (and a helper)
     button = box(ax, 0.5, 6.35, 2.8, 0.95, "Push button", "hold = speak · press = next step", ORANGE)
     mic = box(ax, 0.5, 5.15, 2.8, 0.9, "INMP441 microphone", "records while held", ORANGE)
-    box(ax, 0.5, 3.15, 2.8, 1.6, "Pi Camera 3", "on the chest\nautofocus, 30 fps", ORANGE)
+    box(ax, 0.5, 3.15, 2.8, 1.6, "Pi Camera 3", "on the head\nautofocus, 30 fps", ORANGE)
     browser = box(ax, 0.5, 1.6, 2.8, 0.85, "Helper's phone / laptop", "live view in a browser", ORANGE, "#FFFBF5")
     ears = box(ax, 0.5, 0.55, 2.8, 0.85, "Bluetooth earbuds", "every instruction", ORANGE)
 

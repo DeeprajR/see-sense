@@ -5,7 +5,7 @@ and remembers one line: *hold the button, say where, get guided there.*
 
 **Format:** problem → solution → demo → how it works → call to action.
 **Length:** about 210 words of voice-over (normal speaking pace, ~145 words a minute).
-**What it shows:** only what SEE SENSE does today: the chest camera, the button, the microphone and
+**What it shows:** only what SEE SENSE does today: the head-mounted camera, the button, the microphone and
 spoken guidance in the earbuds.
 **Make the video accessible too:** many viewers will be blind or low-vision. The voice-over
 describes what's on screen, there are no "as you can see" lines, and every shot has captions.
@@ -18,8 +18,8 @@ describes what's on screen, there are no "as you can see" lines, and every shot 
 |---|---|---|---|
 | **0:00–0:07** HOOK | Close-up, eye level: a white cane taps across a busy room. Cut to the person standing still, head tilted, listening. | "You're in a room you've never been in. You need the way out. Where is it?" | — |
 | **0:07–0:20** PROBLEM | Wide shot: chairs, tables, a glass door at the far side. The cane finds a chair leg; the person stops. | "For a blind person, every new room is a puzzle. A cane finds what's at your feet, not where the door is. GPS doesn't work indoors. Apps describe a photo, not the way there." | — |
-| **0:20–0:28** SOLUTION | The person holds a small button on their chest strap. Close-up of the wearable: camera, button, earbuds. | "This is SEE SENSE. Hold the button. Say where you want to go." | **SEE SENSE** · Hold. Say. Go. |
-| **0:28–0:40** DEMO 1: LOOK | Person says "Take me to the exit." A soft beep. Person turns right, slowly, and stops. | "It looks through a camera on your chest. If the door isn't in view, it asks you to turn, measures the turn, and tells you when to stop." | "Turn right about 90 degrees." · "OK, stop." |
+| **0:20–0:28** SOLUTION | The person holds a small button. Close-up of the wearable: camera on the head, button, earbuds. | "This is SEE SENSE. Hold the button. Say where you want to go." | **SEE SENSE** · Hold. Say. Go. |
+| **0:28–0:40** DEMO 1: LOOK | Person says "Take me to the exit." A soft beep. Person turns their head right, slowly, and stops. | "It looks through a camera on your head. If the door isn't in view, it asks you to turn, measures the turn, and tells you when to stop." | "Turn right about 90 degrees." · "OK, stop." |
 | **0:40–0:52** DEMO 2: ROUTE | Person walks slowly; tables pass on their left. Someone walks toward them from the left. They press the button; new instruction. | "Then it gives the route, a few steps at a time, and warns you only when it matters: 'A person on your left, coming toward you.' Every two steps, it looks again." | "Walk about 3 steps." · "A person on your left, coming toward you." |
 | **0:52–1:02** DEMO 3: BLOCKER | A chair blocks the walkway. The person reaches it and pushes it aside. | "A chair in the way? It walks you up to it, and tells you how to clear it: 'Push the chair to your left.'" | "Push the chair to your left." |
 | **1:02–1:08** ARRIVED | Hand reaches the door handle. | "And when you're there, it tells you where the handle is." | "The handle is on your right." |
@@ -35,7 +35,7 @@ describes what's on screen, there are no "as you can see" lines, and every shot 
 | 1 | Cane tapping, close-up, low angle | Natural room sound, no music for the first 3 s |
 | 2 | Person standing, listening | Shallow focus on the face |
 | 3 | Wide room: chairs, tables, glass door far side | Use the real test room |
-| 4 | Close-up of the wearable on the chest | Camera, button and earbuds clearly visible |
+| 4 | Close-up of the wearable | Head-mounted camera, button and earbuds clearly visible |
 | 5 | Thumb holding the button + beep | Record the real beep |
 | 6 | Person turning right, slowly, then stopping | Over-the-shoulder; on-screen text "OK, stop." when they stop |
 | 7 | Walking past tables; someone approaches from the left; button press | Steady, slow walk |

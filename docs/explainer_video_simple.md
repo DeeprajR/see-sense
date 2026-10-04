@@ -13,7 +13,7 @@ Each scene: what to **show** on screen, and what to **say**.
 - **Say:** "A cane finds what's in front of your feet. It can't tell you where the door is, or how to get there."
 
 **3. Meet SEE SENSE** (0:20–0:30)
-- **Show:** the device on the chest: camera, button, earbuds.
+- **Show:** the device: the camera on the head, the button, the earbuds.
 - **Say:** "This is SEE SENSE. A camera on your head, one button, mic, computing, and your earbuds."
 
 **4. Ask** (0:30–0:45)

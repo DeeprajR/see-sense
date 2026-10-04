@@ -63,7 +63,7 @@ How AI and hardware work together to remove those barriers (**now** = in the cur
 | **Hear** | Hold the button and say anything: where you want to go, or a question | Button, INMP441 microphone, **ElevenLabs speech-to-text** when online, **Vosk** offline (its top 3 guesses) | now |
 | **Check** | A command said another way ("what do I do now" = next), or plain noise? (~0.3 s) | **JEV** (TypeSafe) | now |
 | **Understand** | Works out what you mean from your words, the photo and the conversation so far; asks back when unsure ("I heard … Where would you like to go?") | **Claude** | now |
-| **See and survey** | Looks through the chest camera; asks you to turn, tilt or step aside until it finds the nearest door | Pi Camera 3, **Claude Sonnet 5.5** | now |
+| **See and survey** | Looks through the head-mounted camera; asks you to turn or tilt your head, or step aside, until it finds the nearest door | Pi Camera 3, **Claude Sonnet 5.5** | now |
 | **Plan** | Traces how far the walkway is clear and plans a route around what's in the way | **Claude** | now |
 | **Guide** | Speaks the route a few steps at a time in your earbuds; measures your turn from the camera: "Keep turning right" … "OK, stop." when you face the right way | Earbuds, **turn measurement** from the camera (OpenCV) | now |
 | **Clear the way** | Guides you up to a chair in the way and, when the next photo shows you've reached it, tells you how to move it | **Claude** | now |
@@ -75,9 +75,9 @@ How AI and hardware work together to remove those barriers (**now** = in the cur
 Hold button: "Take me to the exit"
    │
    ▼  JEV: a real request? (misheard words -> "Sorry, I didn't catch that." at once)
-1. SURVEY      Claude looks through the chest camera. Unless the exit and a clear way are
+1. SURVEY      Claude looks through the head-mounted camera. Unless the exit and a clear way are
                plainly in view, it looks around first: "Turn right about 60 degrees.",
-               "Tilt the camera up.", "Take one step to your left." (to see past a corner).
+               "Tilt your head up.", "Take one step to your left." (to see past a corner).
                The turn is measured from the camera: "Keep turning right." … "OK, stop."
 2. NEAREST     It picks the nearest door or exit it can reach (a cupboard door is not an exit).
 3. WALKWAY     It traces how far the way is clear. A view from beside a corner or a table can
@@ -126,7 +126,7 @@ What the person can do now that they couldn't before:
 | Part | How it's used | Why this part |
 |---|---|---|
 | **Raspberry Pi 5** (4 GB) + Active Cooler | Runs everything on the body: camera, turn measurement, button, mic; talks to Claude and JEV over Wi-Fi | Small, battery-powered, has the pins for every part; no AI model runs on it, so it stays cool |
-| **Pi Camera 3**, on the chest | Takes the pictures Claude sees (1024 px); the same frames measure how far you turn | Sharp, with autofocus; a direct connection; faces where your body faces |
+| **Pi Camera 3**, head-mounted | Takes the pictures Claude sees (1024 px); the same frames measure how far you turn your head | Sharp, with autofocus; a direct connection; points where you look, so turning your head is a quick way to look around (before walking, it asks you to turn your body the same way) |
 | **INMP441 microphone** (I2S) | Records only while the button is held | Digital, so less noise than an analogue mic; Bluetooth earbud mics lower the sound quality |
 | **Push button** | Hold = speak, short press = next step | Works in noisy rooms where a wake word fails; the user is in control |
 | **Bluetooth earbuds** | All instructions and warnings, spoken | Hands-free; the wearer already owns them |

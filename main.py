@@ -4,7 +4,7 @@
     python main.py --stream                 # ...and watch the camera at http://<PI_IP>:8000
     python main.py --source 0 --show        # laptop webcam, preview window, type requests
 
-Claude looks through the chest camera, asks you to turn until it can see the way, then gives
+Claude looks through the head-mounted camera, asks you to turn until it can see the way, then gives
 the route a few steps at a time (press the button for the next step) and looks again to update
 it. JEV checks what the mic heard before it goes to Claude, and picks which things Claude saw
 need an extra alert. The distance sensor buzzes, and says "Stop" when something is very close:
